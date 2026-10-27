@@ -195,6 +195,8 @@ body.tut-on #toast{display:none}
 .nav{position:relative;z-index:3;display:flex;gap:4px;align-items:center;height:74px;padding:6px;margin-top:10px;background:var(--space2);border:3px solid var(--ink);border-radius:26px;box-shadow:0 5px 0 var(--ink),inset 0 2px 0 rgba(255,255,255,.1);flex-shrink:0}
 .nav button{position:relative;flex:1 1 0;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;border-radius:18px;background:none;color:var(--muted);font:900 11.5px var(--round);padding:0}
 .nav button.on{background:var(--lime);border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink);color:var(--limeInk);transform:translateY(-8px)}
+.nav button.lockt svg,.nav button.lockt span{opacity:.6}
+.nav .badge.lv{background:#4a3d8a;right:12%}
 .nav .badge{position:absolute;top:2px;right:16%;min-width:18px;height:18px;border-radius:9px;background:var(--pink);border:2px solid var(--ink);color:#fff;font:700 11px var(--tech);display:flex;align-items:center;justify-content:center}
 /* карта операций */
 /* «Наводка»: своё главное меню (06.10) — название, тарелка уносит корову, три операции карточками */
@@ -80776,7 +80778,7 @@ const SPECIES = {
 // Глава 2: ice — льдины-эллипсы; huskies — хаски у стад вида sp; grass — островки травы (и их жители); thieves — деревья с воришками;
 // sandstorm — расписание порывов; oasis — пруд и расписание водопоя. rule — ключ правила (схема брифинга и подсказка — по OPS).
 const LEVELS = [
-  { n: 1, id: 'farm', seed: 1, name: 'Farm', theme: 'farm', field: [15, 21], time: 75, start: 9,
+  { n: 1, id: 'farm', seed: 1, name: 'Farm', theme: 'farm', field: [15, 21], time: 75, start: 10,
     herds: [ { sp: 'chick', n: 24, k: 5, near: true }, { sp: 'bunny', n: 12, k: 3 }, { sp: 'duck', n: 8, k: 2 },
              { sp: 'piglet', n: 8, k: 2 }, { sp: 'sheep', n: 6, k: 2 } ],
     boss: { sp: 'cow', r: 1.3, name: 'Daisy the Cow' }, goal: { type: 'boss' },
@@ -80800,7 +80802,7 @@ const LEVELS = [
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },   // угрозы убраны (05.10, Андрей: «препятствия пока убери — от них нет толка»)
   // n 2 «Птичий двор» (загоны) убран 05.10 по слову Андрея («играется плохо — просто уберём»): номера за ним сдвинулись,
   // сид карты — прежний номер (seed), чтобы карты операций не поменялись.
-  { n: 2, id: 'ranch', seed: 2, name: 'Ranch', theme: 'ranch', field: [19, 26], time: 100, start: 9,
+  { n: 2, id: 'ranch', seed: 2, name: 'Ranch', theme: 'ranch', field: [19, 26], time: 100, start: 10,
     herds: [ { sp: 'chick', n: 18, k: 4, near: true }, { sp: 'piglet', n: 12, k: 3 }, { sp: 'sheep', n: 10, k: 3 },
              { sp: 'goat', n: 8, k: 2, r: 0.9, v: 2.8 }, { sp: 'cow', n: 6, k: 2 }, { sp: 'horse', n: 5, k: 2, r: 1.6, v: 4.4 } ],
     boss: { sp: 'bull', r: 2.3, name: 'Thunder the Bull' }, goal: { type: 'boss' },
@@ -80818,7 +80820,7 @@ const LEVELS = [
       boss: { sp: 'bull', r: 1.6, name: 'Thunder the Bull', lock: 4 }, farmers: 2, dogs: 1, burrows: [{ sp: 'piglet' }],   // 06.10 (вечер): Ранчо — 03, после Ночи: к фермерам пёс   // 06.10: фермеры у стад (вместо стрелка) и нора с золотым поросёнком; Гром — верхняя ступень
       reinforce: [{ at: 3, farmers: 1 }],                                                         // 06.10: тарелка подросла — ещё фермер
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },
-  { n: 3, id: 'night', seed: 4, name: 'Night Farm', theme: 'night', field: [16, 22], time: 100, start: 9, rule: 'lights', calm: true,
+  { n: 3, id: 'night', seed: 4, name: 'Night Farm', theme: 'night', field: [16, 22], time: 100, start: 10, rule: 'lights', calm: true,
     herds: [ { sp: 'chick', n: 18, k: 4, near: true }, { sp: 'bunny', n: 10, k: 3 }, { sp: 'piglet', n: 8, k: 2 },
              { sp: 'sheep', n: 6, k: 2 }, { sp: 'cow', n: 4, k: 2 } ],
     boss: { sp: 'piglet', r: 1.6, name: 'Boris the Hog', at: [1, -12.5] }, goal: { type: 'boss' },   // между зонами прожекторов: свет проходит ~¼ времени
@@ -80834,7 +80836,7 @@ const LEVELS = [
                { sp: 'cow', n: 5, k: 2, spread: 3.4, homeR: 3.8, drift: 0.2 } ],
       boss: { sp: 'piglet', r: 1.3, name: 'Boris the Hog', fight: true, lock: 3 }, reinforce: [{ at: 3, dogs: 1 }],   // 06.10: подросла — сторожевой пёс
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },
-  { n: 4, id: 'river', seed: 5, name: 'River Valley', theme: 'river', field: [17, 23], time: 110, start: 9, rule: 'river',
+  { n: 4, id: 'river', seed: 5, name: 'River Valley', theme: 'river', field: [17, 23], time: 110, start: 10, rule: 'river',
     river: { z0: -4, amp: 0.8, k: 0.2, ph: 0, w: 2.6, bridges: [-11, -2.5, 3, 11] },
     herds: [ { sp: 'chick', n: 14, k: 3, near: true }, { sp: 'duck', n: 10, k: 3 }, { sp: 'sheep', n: 8, k: 3 },
              { sp: 'goat', n: 6, k: 2 }, { sp: 'cow', n: 5, k: 2 } ],
@@ -80851,7 +80853,7 @@ const LEVELS = [
                { sp: 'horse', n: 4, k: 2, spread: 3.4, homeR: 4, drift: 0.2 } ],
       dogs: 1, reinforce: [{ at: 3, dogs: 1 }],
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },
-  { n: 5, id: 'savanna', seed: 3, name: 'Safari', theme: 'savanna', field: [23, 31], time: 120, start: 9,
+  { n: 5, id: 'savanna', seed: 3, name: 'Safari', theme: 'savanna', field: [23, 31], time: 120, start: 10,
     herds: [ { sp: 'bunny', n: 20, k: 4, near: true, r: 0.28 }, { sp: 'warthog', n: 12, k: 3 }, { sp: 'zebra', n: 8, k: 3, r: 0.95, v: 3.0 },
              { sp: 'giraffe', n: 5, k: 2 }, { sp: 'elephant', n: 4, k: 2, r: 1.7 } ],
     boss: { sp: 'elephant', r: 3.0, name: 'Jumbo the Elephant' }, goal: { type: 'boss' },
@@ -80866,7 +80868,7 @@ const LEVELS = [
                { sp: 'elephant', n: 5, k: 2, r: 1.25, v: 3.8, spread: 3.4, homeR: 3.8, drift: 0.2 } ],
       boss: { sp: 'elephant', r: 1.6, name: 'Jumbo the Elephant', lock: 4 }, farmers: 2, burrows: [{ sp: 'bunny' }], reinforce: [{ at: 3, farmers: 1 }],
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },
-  { n: 6, id: 'prairie', seed: 7, name: 'Prairie', theme: 'prairie', field: [19, 25], time: 90, start: 9, rule: 'herd',
+  { n: 6, id: 'prairie', seed: 7, name: 'Prairie', theme: 'prairie', field: [19, 25], time: 90, start: 10, rule: 'herd',
     walls: [ [-15, -13, -7, -13], [-15, -13, -15, -5], [8, -19, 16, -19], [16, -19, 16, -11], [6, 3, 14, 3] ],
     herds: [ { sp: 'bunny', n: 16, k: 4, near: true, r: 0.28 }, { sp: 'piglet', n: 10, k: 3 }, { sp: 'sheep', n: 8, k: 2 },
              { sp: 'mustang', n: 10, k: 3 }, { sp: 'cow', n: 4, k: 2 } ],
@@ -80882,12 +80884,12 @@ const LEVELS = [
                { sp: 'mustang', n: 8, k: 2, spread: 3.4, homeR: 4, drift: 0.3 } ],
       boss: { sp: 'mustang', r: 1.3, name: 'Gale the Mustang', lock: 3 }, dogs: 1, reinforce: [{ at: 3, dogs: 1 }],   // ступень 5 из 6: трудность — в погоне, не в росте
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },
-  { n: 7, id: 'gold', seed: 8, name: 'Gold Rush', theme: 'gold', field: [17, 23], time: 100, start: 9, cap: 30, rule: 'gold',
+  { n: 7, id: 'gold', seed: 8, name: 'Gold Rush', theme: 'gold', field: [17, 23], time: 100, start: 10, cap: 30, rule: 'gold',
     herds: [ { sp: 'chick', n: 16, k: 4, near: true }, { sp: 'bunny', n: 12, k: 3 }, { sp: 'piglet', n: 8, k: 2 },
              { sp: 'sheep', n: 6, k: 2 }, { sp: 'goat', n: 4, k: 2 } ],
     golden: { first: 6, every: 8, life: 14, sp: ['piglet', 'bunny', 'sheep', 'goat'] }, goal: { type: 'gold', n: 3 },
     hz: { fences: 2, lanes: [ { axis: 'x', speed: 2.2 } ], chasers: 0, chaserSpeed: 0 } },
-  { n: 8, id: 'storm', seed: 9, name: 'Storm', theme: 'storm', field: [18, 24], time: 105, start: 9, cap: 36, rule: 'tornado',
+  { n: 8, id: 'storm', seed: 9, name: 'Storm', theme: 'storm', field: [18, 24], time: 105, start: 10, cap: 36, rule: 'tornado',
     herds: [ { sp: 'chick', n: 20, k: 4, near: true }, { sp: 'bunny', n: 14, k: 3 }, { sp: 'piglet', n: 10, k: 3 },
              { sp: 'sheep', n: 10, k: 3 }, { sp: 'goat', n: 6, k: 2 } ],
     tornado: { speed: 1.7, pull: 6.5, orbit: 1.7, life: [8, 11], calm: 5 }, goal: { type: 'combo', n: 9 },
@@ -80902,7 +80904,7 @@ const LEVELS = [
   // шевеление точнее человека), Водопой — по окнам водопоя (ниже). Финалы без правила — таймеры прежние (≥ 2 × p85).
   // Финалы 12/15/18 — обычные боссы до этапа 3 (гиганты). Угрозы финалов — модели биома (THEMES.hz: снегоход/квадроцикл/джип + смотритель).
   // Льды: Клык лежит на дальней льдине (at) — она ему дом; кольцо вокруг него — на льду. Льдины ~20% площади, старт на снегу.
-  { n: 9, id: 'floes', seed: 10, name: 'Ice Floes', theme: 'arctic', field: [19, 25], time: 60, start: 9, rule: 'ice',
+  { n: 9, id: 'floes', seed: 10, name: 'Ice Floes', theme: 'arctic', field: [19, 25], time: 60, start: 10, rule: 'ice',
     ice: { floes: [ { x: 4, z: -15, r: 7, rz: 6.2 }, { x: -10, z: -5, r: 5, rz: 4 }, { x: 10, z: 1, r: 4.5, rz: 5.5 },
                     { x: -8, z: 13, r: 4, rz: 3.2 }, { x: 12, z: 16, r: 3.5 } ] },
     herds: [ { sp: 'penguin', n: 18, k: 4, near: true }, { sp: 'seal', n: 12, k: 3 }, { sp: 'reindeer', n: 6, k: 2 }, { sp: 'walrus', n: 4, k: 2 } ],
@@ -80918,18 +80920,18 @@ const LEVELS = [
       boss: { sp: 'walrus', r: 1.3, name: 'Fang the Walrus', lock: 4, at: [4, -15] }, dogs: 1, reinforce: [{ at: 3, dogs: 1 }],   // ступень 5 из 6: трудность — в скольжении и хаски
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },
   // Упряжка: три хаски у двух стад оленей (две собаки у одного, одна у другого); олени — в заказе.
-  { n: 10, id: 'sled', seed: 11, name: 'Sled Team', theme: 'arctic', field: [20, 26], time: 105, start: 9, cap: 34, rule: 'huskies',
+  { n: 10, id: 'sled', seed: 11, name: 'Sled Team', theme: 'arctic', field: [20, 26], time: 105, start: 10, cap: 34, rule: 'huskies',
     huskies: { n: 3, sp: 'reindeer' },
     herds: [ { sp: 'penguin', n: 18, k: 4, near: true }, { sp: 'seal', n: 12, k: 3 }, { sp: 'reindeer', n: 8, k: 2 }, { sp: 'walrus', n: 3, k: 1 } ],
     goal: { type: 'order', items: { reindeer: 5, seal: 6, penguin: 8 } },
     hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } },
-  { n: 11, id: 'mammoth', seed: 12, name: 'Mammoth', theme: 'arctic', field: [22, 30], time: 85, start: 9,
+  { n: 11, id: 'mammoth', seed: 12, name: 'Mammoth', theme: 'arctic', field: [22, 30], time: 85, start: 10,
     herds: [ { sp: 'penguin', n: 20, k: 4, near: true }, { sp: 'seal', n: 14, k: 3 }, { sp: 'reindeer', n: 8, k: 3 }, { sp: 'walrus', n: 6, k: 2 } ],
     boss: { sp: 'mammoth', r: 3.6, name: 'Tusk the Mammoth' }, goal: { type: 'boss' },
     hz: { fences: 2, lanes: [ { axis: 'x', speed: 2.4 }, { axis: 'z', speed: 2.1 } ], chasers: 2, chaserSpeed: 2.4 } },
   // Заросли: пять островков травы, в четырёх живут свои звери (сверх стад; их виды есть и в стадах — подсказка «теперь можно»);
   // Тоби — в логове у руин (at в траве: заросли ему дом), пустой островок шевелится, только если кто-то забрёл.
-  { n: 12, id: 'thicket', seed: 13, name: 'Thicket', theme: 'jungle', field: [18, 24], time: 55, start: 9, rule: 'grass',
+  { n: 12, id: 'thicket', seed: 13, name: 'Thicket', theme: 'jungle', field: [18, 24], time: 55, start: 10, rule: 'grass',
     grass: [ { x: -6, z: -15, r: 4.5, sp: 'capybara', n: 3 }, { x: 8, z: -9, r: 3.6, sp: 'monkey', n: 4 }, { x: -9, z: -2, r: 3.4, sp: 'toucan', n: 5 },
              { x: 9, z: 5, r: 3, sp: 'tapir', n: 2 }, { x: 1, z: -5, r: 2.6 } ],
     herds: [ { sp: 'toucan', n: 18, k: 4, near: true }, { sp: 'monkey', n: 12, k: 3 }, { sp: 'capybara', n: 10, k: 3 }, { sp: 'tapir', n: 6, k: 2 } ],
@@ -80945,17 +80947,17 @@ const LEVELS = [
       boss: { sp: 'tapir', r: 1.35, name: 'Toby the Tapir', lock: 4, at: [-6, -15] }, farmers: 1, burrows: [{ sp: 'monkey' }], reinforce: [{ at: 3, farmers: 1 }],
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },
   // Обезьянник: шесть деревьев с воришками по краям поля (нижний край со стартом пустой).
-  { n: 13, id: 'monkeys', seed: 14, name: 'Monkey Business', theme: 'jungle', field: [17, 23], time: 90, start: 9, cap: 32, rule: 'thieves',
+  { n: 13, id: 'monkeys', seed: 14, name: 'Monkey Business', theme: 'jungle', field: [17, 23], time: 90, start: 10, cap: 32, rule: 'thieves',
     thieves: { n: 6 },
     herds: [ { sp: 'toucan', n: 16, k: 4, near: true }, { sp: 'monkey', n: 12, k: 3 }, { sp: 'capybara', n: 8, k: 2 }, { sp: 'tapir', n: 4, k: 2 } ],
     golden: { first: 6, every: 6, life: 14, sp: ['monkey'] }, goal: { type: 'gold', n: 3 },
     hz: { fences: 2, lanes: [], chasers: 0, chaserSpeed: 0 } },
-  { n: 14, id: 'gorilla', seed: 15, name: 'Gorilla', theme: 'jungle', field: [22, 30], time: 75, start: 9,
+  { n: 14, id: 'gorilla', seed: 15, name: 'Gorilla', theme: 'jungle', field: [22, 30], time: 75, start: 10,
     herds: [ { sp: 'toucan', n: 20, k: 4, near: true }, { sp: 'monkey', n: 14, k: 3 }, { sp: 'capybara', n: 10, k: 3 }, { sp: 'tapir', n: 6, k: 2 } ],
     boss: { sp: 'gorilla', r: 3.4, name: 'Bongo the Gorilla' }, goal: { type: 'boss' },
     hz: { fences: 2, lanes: [ { axis: 'x', speed: 2.6 } ], chasers: 2, chaserSpeed: 2.5 } },
   // Самум: первое предупреждение на 6-й секунде, затишье 8–11 с, полосы бегут 2,5 с, порыв 3,5–5 с.
-  { n: 15, id: 'simoom', seed: 16, name: 'Simoom', theme: 'desert', field: [20, 26], time: 55, start: 9, rule: 'sandstorm',
+  { n: 15, id: 'simoom', seed: 16, name: 'Simoom', theme: 'desert', field: [20, 26], time: 55, start: 10, rule: 'sandstorm',
     sandstorm: { first: 6, calm: [8, 11], warn: 2.5, gust: [3.5, 5], push: 1 },
     herds: [ { sp: 'meerkat', n: 18, k: 4, near: true }, { sp: 'fennec', n: 12, k: 3 }, { sp: 'ostrich', n: 6, k: 2 }, { sp: 'camel', n: 4, k: 2 } ],
     boss: { sp: 'ostrich', r: 2.6, name: 'Bullet the Ostrich' }, goal: { type: 'boss' },
@@ -80964,7 +80966,7 @@ const LEVELS = [
   // окно 6 с, кольцо вокруг пруда с толпой — ~37 пришельцев (потолок 40). Верблюды не пьют: с ними кольцо было бы ~47.
   // Победа идёт окнами (кольцо на ~30, ~50, ~70 с), поэтому таймер не 2 × p85 (65 — третья звезда раньше первого окна), а 75:
   // ★★★ — кольцо в первое окно, ★★ — во второе, ★ — в третье.
-  { n: 16, id: 'waterhole', seed: 17, name: 'Watering Hole', theme: 'desert', field: [18, 24], time: 75, start: 9, cap: 40, rule: 'oasis',
+  { n: 16, id: 'waterhole', seed: 17, name: 'Watering Hole', theme: 'desert', field: [18, 24], time: 75, start: 10, cap: 40, rule: 'oasis',
     oasis: { x: 0, z: -6, r: 1.8, first: 22, every: 20, walk: 5, drink: 6, reach: 16, sp: ['meerkat', 'fennec', 'ostrich'] },
     herds: [ { sp: 'meerkat', n: 16, k: 4, near: true }, { sp: 'fennec', n: 14, k: 3 }, { sp: 'ostrich', n: 6, k: 2 }, { sp: 'camel', n: 3, k: 1 } ],
     goal: { type: 'combo', n: 12 },
@@ -80979,7 +80981,7 @@ const LEVELS = [
                { sp: 'camel', n: 6, k: 2, r: 1.2, v: 3.6, spread: 3.4, homeR: 3.8, drift: 0.2 } ],
       boss: { sp: 'camel', r: 1.65, name: 'Dune the Camel', lock: 5 }, farmers: 2, dogs: 1, reinforce: [{ at: 3, dogs: 1 }],
       hz: { fences: 0, lanes: [], chasers: 0, chaserSpeed: 0 } } },
-  { n: 17, id: 'barkhan', seed: 18, name: 'Dune', theme: 'desert', field: [24, 32], time: 80, start: 9,
+  { n: 17, id: 'barkhan', seed: 18, name: 'Dune', theme: 'desert', field: [24, 32], time: 80, start: 10,
     herds: [ { sp: 'meerkat', n: 20, k: 4, near: true }, { sp: 'fennec', n: 14, k: 3 }, { sp: 'ostrich', n: 8, k: 3 }, { sp: 'camel', n: 6, k: 2 } ],
     boss: { sp: 'camel', r: 4.0, name: 'Dune the Camel' }, goal: { type: 'boss' },
     hz: { fences: 3, lanes: [ { axis: 'x', speed: 3.0 }, { axis: 'z', speed: 2.4 } ], chasers: 2, chaserSpeed: 2.6 } },
@@ -80990,7 +80992,7 @@ const LEVELS = [
 const AIM_ORDER = ['farm', 'night', 'ranch', 'river', 'savanna', 'prairie', 'floes', 'thicket', 'waterhole'];
 function aimOrderIdx(){ return AIM_ORDER.map(id => LEVELS.findIndex(L => L.id === id)); }
 // Битва отрядов (режим, а не уровень): арена, три генерала-соперника, 90 секунд, побеждает самый большой отряд.
-const BATTLE = { n: 0, id: 'battle', name: 'Squad Battle', theme: 'arena', field: [22, 28], time: 90, start: 9, cap: CFG.BATTLE_CAP,
+const BATTLE = { n: 0, id: 'battle', name: 'Squad Battle', theme: 'arena', field: [22, 28], time: 90, start: 10, cap: CFG.BATTLE_CAP,
   herds: [ { sp: 'chick', n: 26, k: 6 }, { sp: 'bunny', n: 14, k: 3 }, { sp: 'piglet', n: 12, k: 3 }, { sp: 'sheep', n: 10, k: 3 },
            { sp: 'goat', n: 6, k: 2 }, { sp: 'cow', n: 6, k: 2 }, { sp: 'horse', n: 4, k: 2 } ],
   golden: { first: 14, every: 16, life: 14, sp: ['piglet', 'sheep'] }, goal: { type: 'battle' },
@@ -82225,7 +82227,7 @@ function levelFor(li, mode){ const L = LEVELS[li], o = mode === 'aim' ? L.aim : 
 // показываем, что есть машина, которая тебя бьёт; потом бесшовно начинается 1 уровень»). Поле Фермы без стад и босса, зверей
 // ставит сценарий (ringTutSpawn), трактор стоит, пока сценарий не выпустит (ringTutTractor); своя лестница — каждое кольцо +1 (8 → 12);
 // отбившиеся не теряются. Конец — promoteTutorial: то же состояние дозаселяется Фермой, таймер с нуля.
-const TUT_RING = { n: 0, name: 'Training', time: 3600, herds: [], boss: null, goal: { type: 'tut' }, noRespawn: true, start: 8, sizes: [8, 9, 10, 11, 12], laneAhead: 7, cast: { chick: 12, bunny: 3 } };   // старт 8 — столько кольцу цыплёнка показывает значок (needUI), минимум — 6
+const TUT_RING = { n: 0, name: 'Training', time: 3600, herds: [], boss: null, goal: { type: 'tut' }, noRespawn: true, start: 10, sizes: [10, 11, 12, 13, 14], laneAhead: 7, cast: { chick: 12, bunny: 3 } };   // старт 10 (27.10, Андрей: в обучении на 2 больше; было 8 — сколько значок цыплёнка требует), +1 за кольцо
 const TUT_LEVEL = { n: 0, name: 'Tutorial', time: 3600, herds: [], cast: { chick: 12, bunny: 6 }, dogs: 0, farmers: 0, burrows: [], reinforce: [], boss: null, lights: [], goal: { type: 'tut' }, noRespawn: true };
 // Доля опыта за зверя при запасе сил ratio = пришельцев / нужно: 1× — полностью, 2× и больше — почти ничего (Андрей 05.10).
 function xpFactor(ratio){ const P = CFG.PILE; return ratio <= 1 ? 1 : Math.max(P.XP_FLOOR, 1 - (ratio - 1) / (P.XP_ZERO - 1)); }
@@ -86136,6 +86138,7 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => { if (KEYDIR[e.code]) INP.keys[e.code] = false; if (e.code === 'Space'){ if (G.spaceHeld) G.releaseReq = true; G.spaceHeld = false; } });
 function playerInput(){
   const s = G.s, Ld = s.leader;
+  if (G.tr && G.tr.step === 'demo') return trDemoInput(s);                 // обводка: ролик в начале обучения ведёт сам
   if (G.bot){ if (s.aim){ G.aimTx = G.aimCx = Ld.x; G.aimTz = G.aimCz = Ld.z; } return botInput(s, G.bot); }   // «Наводка»: намерение = прицел бота (камера и выход из бота)
   if (s.aim && s.bossGame){ const out = { active: true, tx: Ld.x, tz: Ld.z, snap: true, aiming: false, hit: !!G.hitReq }; G.hitReq = false; G.releaseReq = false; G.tapReq = false; return out; }   // поимка главной цели: только тапы
   if (s.aim){                                         // «Наводка»: точка прицела + выстрел (стрелки — сдвиг, пробел — удар)
@@ -87272,15 +87275,40 @@ function tutArrow(x, y){ fctx.beginPath(); fctx.moveTo(x - 11, y - 14); fctx.lin
 // Стоит 6 с — подсказка оживает (палец сам обводит цель); 20 с без продвижения — цель подходит ближе.
 const TR = { IDLE_T: 6, ASSIST_T: 20, DODGE_DELAY: 2.4 };
 const TR_L = ['Circle', 'Combo', 'Tractor'];
-function startRingTutorial(){
+function startRingTutorial(fromDemo){
   G.li = 0; G.op = 0; G.sectorNews = false;
   Object.assign(G.save, { tutor: true, tipXp: true, bumpTip: true, tipCut: true, tipHonk: true, tipZap: true }); save();   // старые всплывашки обводки не нужны: учит поле
   beginRun(createState(0, 0, { tut: true, up: upgradesFor() }));
   const s = G.s; G.tut = 0; G.thr = null; $('thr').classList.add('hide'); tutPanel(-1);
   G.tr = { step: '', t0: s.t, prog: s.t, idle: s.t, pend: [], next: null, k: 1, done: [false, false, false], cutAt: -9, launched: false };
-  log('event', 'level.start', 'level=0 tutorial'); goto('game');
+  if (!fromDemo) log('event', 'level.start', 'level=0 tutorial'); goto('game');
   render(0.016); warmUp(); render(0.016); G.lastNow = performance.now();
-  trGo('one');
+  if (fromDemo){ trGo('one'); trCheer('YOUR TURN!', '#9ff3ff'); } else trDemo();
+}
+// Ролик в начале (27.10, Андрей: «на старте покажем небольшой типа видосик, на котором отряд кольцом захватывает, чтобы игрок
+// понял визуально сразу, какая механика, а потом пробовал сам»). Не запись, а живая игра на автопилоте в рамке «видео»: генерал
+// сам обводит цыплёнка, кольцо, лазеры, тарелка. Касание — сразу к игре. Потом поле с нуля, тот же цыплёнок, «YOUR TURN!».
+const TR_DEMO = { WAIT: 1.2, AFTER: 2.6, MAX: 14, SKIP_T: 0.6 };   // ролик ~6 с: пауза, обводка ~2,5 с, тарелка и подпись
+function trDemo(){
+  const s = G.s, T = G.tr, A = trAnchor(); T.step = 'demo'; T.t0 = s.t; T.demoEnd = 0; T.demoCap = 0;
+  trPopNow({ sp: 'chick', x: A.x, z: A.z - 3.4 }); log('event', 'tut.demo', 'start');
+}
+// Автопилот ролика: по спирали к цыплёнку и вокруг, радиус меньше кольца отряда — голова пересекает свой хвост, кольцо смыкается.
+function trDemoInput(s){
+  const Ld = s.leader, T = G.tr, a = trLive()[0], still = { active: false, tx: Ld.x, tz: Ld.z };
+  if (!a || T.demoEnd || s.t - T.t0 < TR_DEMO.WAIT) return still;
+  const R = Math.max(a.r + 0.6, s.n * CFG.SPACING / TAU * 0.7), rx = Ld.x - a.x, rz = Ld.z - a.z, d = Math.hypot(rx, rz) || 1;
+  const k = clamp((d - R) / 0.25, -2, 2), wx = -rz / d - rx / d * k, wz = rx / d - rz / d * k, w = Math.hypot(wx, wz) || 1;
+  return { active: true, tx: Ld.x + wx / w * SH.STICK_LEAD, tz: Ld.z + wz / w * SH.STICK_LEAD };
+}
+function trDemoEnd(why){
+  const T = G.tr; if (!T || T.step !== 'demo' || T.restart) return; T.restart = true;
+  log('event', 'tut.demo', why);
+  setTimeout(() => { if (G.tr !== T) return;                              // не посреди шага симуляции
+    const P = INP.down ? PTRS.get(INP.id) : null, id = INP.id, sx = INP.sx, sy = INP.sy, sv = { x: INP.sv.x, y: INP.sv.y };
+    startRingTutorial(true);
+    if (P){ PTRS.set(id, P); takePointer(id, P.x, P.y); INP.sx = sx; INP.sy = sy; INP.sv.x = sv.x; INP.sv.y = sv.y; }   // коснулся и сразу повёл — палец не теряем (beginRun/goto сбрасывают ввод)
+  }, 0);
 }
 function trLive(){ return G.s.animals.filter(a => a.tut && a.state === 'free'); }
 function trOwnStrays(){ const s = G.s; return s.strays.filter(o => o.owner === s.id); }
@@ -87309,6 +87337,11 @@ function trTick(){
   const s = G.s, T = G.tr; if (!T) return;
   for (let i = T.pend.length - 1; i >= 0; i--) if (s.t >= T.pend[i].at) trPopNow(T.pend.splice(i, 1)[0]);
   if (Math.hypot(s.leader.vx, s.leader.vz) > 0.6 || INP.down) T.idle = s.t;
+  if (T.step === 'demo'){
+    if (INP.down && s.t - T.t0 > TR_DEMO.SKIP_T) trDemoEnd('tap');          // коснулся — хочет сам
+    else if (T.demoEnd ? s.t >= T.demoEnd : s.t - T.t0 > TR_DEMO.MAX) trDemoEnd(T.demoEnd ? 'done' : 'timeout');
+    return;
+  }
   if (T.next && s.t >= T.next.at){ const n = T.next; T.next = null; if (n.step === 'farm') trFinish(false); else trGo(n.step); return; }
   const live = trLive();
   if ((T.step === 'one' || T.step === 'two' || T.step === 'bunch') && !live.length && !T.pend.length && !T.next) trGo(T.step);   // зверь сценария пропал (убежал, съеден) — заново
@@ -87328,6 +87361,7 @@ function trAssist(){
 }
 function trEvent(e){
   const s = G.s, T = G.tr; if (!T) return;
+  if (T.step === 'demo'){ if (e.type === 'close' && e.ids && e.ids.length && !T.demoEnd){ T.demoCap = s.t; T.demoEnd = s.t + TR_DEMO.AFTER; } return; }
   if (e.type === 'close' && e.ids && e.ids.length){
     const tutHit = e.ids.some(id => !s.animals.some(a => a.id === id && !a.tut)); if (!tutHit) return;
     T.prog = s.t; const live = trLive();
@@ -87369,6 +87403,7 @@ function trDraw(s, t){
   const demo = pts => { if (!pts || !idle || INP.down) return; const k = ((t - T.idle) % 2.4) / 2.4, i = Math.floor(k * (pts.length - 1)); tutHand(pts[i].x, pts[i].y, k < 0.06 ? k / 0.06 : k > 0.94 ? (1 - k) / 0.06 : 1, true); };
   const target = (list, txt, col) => { if (!list.length) return; const c = circleR(list), pts = ghost(c.cx, c.cz, c.R, col), q = project(c.cx, 1.4, c.cz);
     if (q.ok){ tutArrow(q.x, q.y - 22 - Math.abs(Math.sin(t * 5)) * 8); word(txt, q.x, q.y - 50, 22, col || '#9ff3ff'); } demo(pts); };
+  if (T.step === 'demo'){ trDemoDraw(s, t, live, target); return; }
   if (T.step === 'one' || T.step === 'two'){
     const near = live.slice().sort((a, b) => Math.hypot(a.x - Ld.x, a.z - Ld.z) - Math.hypot(b.x - Ld.x, b.z - Ld.z))[0];
     if (near) target([near], 'CIRCLE IT');
@@ -87386,6 +87421,29 @@ function trDraw(s, t){
     for (const o of trOwnStrays()){ const q = project(o.x, 1.1, o.z); if (q.ok) tutArrow(q.x, q.y - 6 - Math.abs(Math.sin(t * 6 + o.id)) * 6); }
     const S = trOwnStrays(); if (S.length){ let cx = 0, cz = 0; for (const o of S){ cx += o.x; cz += o.z; } const q = project(cx / S.length, 1.9, cz / S.length); if (q.ok) word('PICK UP!', q.x, q.y - 28, 22, '#b8ff8a'); }
   }
+}
+// Рамка ролика: плашка «HOW TO PLAY» с мигающей точкой, внизу полоса с подписью и ходом ролика, джойстик с пальцем — куда ведёт.
+function trDemoDraw(s, t, live, target){
+  const T = G.tr, W2 = fx.clientWidth, H2 = fx.clientHeight, u = s.t - T.t0, Ld = s.leader, cap = T.demoCap > 0;
+  if (!cap && live.length) target(live, 'CIRCLE IT');
+  fctx.save(); fctx.lineWidth = 6; fctx.strokeStyle = 'rgba(255,255,255,0.85)'; fctx.setLineDash([]);
+  const top = hudBottom() + 8; fctx.strokeRect(5, top, W2 - 10, H2 - top - 5); fctx.restore();   // рамка кадра: это показ, не игра
+  const py = top + 26; fctx.fillStyle = 'rgba(20,11,51,0.82)'; fctx.beginPath(); fctx.roundRect(W2 / 2 - 82, py - 16, 164, 32, 16); fctx.fill();
+  if (Math.floor(t * 2) % 2 === 0){ fctx.beginPath(); fctx.arc(W2 / 2 - 62, py, 6, 0, TAU); fctx.fillStyle = '#ff5d5d'; fctx.fill(); }
+  drawLabel('HOW TO PLAY', W2 / 2 + 8, py, 16, '#ffffff', 1);
+  const vx = Ld.vx, vz = Ld.vz, sp = Math.hypot(vx, vz), bx = W2 / 2, by = H2 - 190;   // джойстик там же, где будет палец игрока
+  if (!cap){
+    const q0 = project(Ld.x, 0, Ld.z), q1 = project(Ld.x + vx * 0.3, 0, Ld.z + vz * 0.3); let dx = 0, dy = 0;
+    if (q0.ok && q1.ok && sp > 0.4){ const d = Math.hypot(q1.x - q0.x, q1.y - q0.y) || 1; dx = (q1.x - q0.x) / d * 32; dy = (q1.y - q0.y) / d * 32; }
+    fctx.beginPath(); fctx.arc(bx, by, 50, 0, TAU); fctx.fillStyle = 'rgba(255,255,255,0.16)'; fctx.fill(); fctx.lineWidth = 3; fctx.strokeStyle = 'rgba(255,255,255,0.55)'; fctx.stroke();
+    fctx.beginPath(); fctx.arc(bx + dx, by + dy, 22, 0, TAU); fctx.fillStyle = 'rgba(255,255,255,0.75)'; fctx.fill();
+    tutHand(bx + dx, by + dy + 4, 1, sp > 0.4);
+  }
+  fctx.fillStyle = 'rgba(20,11,51,0.82)'; fctx.fillRect(5, H2 - 92, W2 - 10, 87);
+  drawLabel(cap ? 'Ring closed — it\'s yours!' : 'Lead the squad around it', W2 / 2, H2 - 62, 20, cap ? '#b8ff8a' : '#ffffff', 1);
+  drawLabel('tap to play', W2 / 2, H2 - 32, 13, '#c9bff5', 0.75 + 0.25 * Math.sin(t * 4));
+  const k = cap ? Math.min(1, 0.8 + 0.2 * (s.t - T.demoCap) / TR_DEMO.AFTER) : Math.min(0.8, u / 8);
+  fctx.fillStyle = 'rgba(255,255,255,0.25)'; fctx.fillRect(5, H2 - 9, W2 - 10, 4); fctx.fillStyle = '#ff5d5d'; fctx.fillRect(5, H2 - 9, (W2 - 10) * k, 4);
 }
 // ===================== «Наводка»: карточка угрозы при первой встрече (06.10, Андрей: «что сейчас делает мне прожектор? не понятно
 // — должно быть понятно; то же и стрелок») =====================
@@ -89053,7 +89111,11 @@ function navBar(on, aimOnly){
   const albumN = META.ALBUM.filter(k => G.save.album[k]).length;
   const tab = (key, icn, txt, badge) => '<button data-act="' + key + '"' + (on === key ? ' class="on"' : '') + '>' + ic(icn, 25, 2.5) + '<span>' + txt + '</span>' + (badge && on !== key ? '<i class="badge">' + badge + '</i>' : '') + '</button>';
   if (aimOnly || G.core === 'aim') return '<nav class="nav">' + tab('map', 'map', 'Operations') + tab('album', 'book', 'Album', albumN ? albumN : '') + tab('help', 'help', 'How to play') + '</nav>';   // «Наводка»: без Лаборатории и Битвы (они про отряд)
-  return '<nav class="nav">' + tab('map', 'map', 'Map') + tab('lab', 'flask', 'Lab', affordable ? '!' : '') + tab('album', 'book', 'Album', albumN ? albumN : '') + tab('battle', 'swords', 'Battle') + '</nav>';
+  const bt = battleOn() ? tab('battle', 'swords', 'Battle') : '<button data-act="lockedbattle" class="lockt">' + ic('lock', 25, 2.5) + '<span>Battle</span><i class="badge lv">' + LEVELS[LEVELS.length - 1].n + '</i></button>';   // замок и номер последней операции
+  return '<nav class="nav">' + tab('map', 'map', 'Map') + tab('lab', 'flask', 'Lab', affordable ? '!' : '') + tab('album', 'book', 'Album', albumN ? albumN : '') + bt + '</nav>';
+}
+// Битва открывается после прохождения всех операций (27.10, Андрей): до того на вкладке — замок и номер последней операции.
+function battleOn(){ return G.devBattle || (G.save.stars[LEVELS.length - 1] || 0) > 0;
 }
 function smoothPath(pts){
   let d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
@@ -89369,6 +89431,7 @@ function scrHelp(){
 const SCREENS = ['map', 'mission', 'lab', 'album', 'battle', 'help', 'game', 'pause', 'win', 'lose', 'results'];
 function goto(screen, arg){
   if (screen === 'menu' || (G.core === 'aim' && (screen === 'lab' || screen === 'battle'))) screen = 'map';   // «Наводка»: Лаборатории и Битвы (PvP) нет
+  if (screen === 'battle' && !battleOn()) screen = 'map';                // битва — после всех операций
   if (screen === 'game' && !G.s){ if (G.core === 'aim') startOp(aimDoneN() + 1); else if (!G.save.tutRing) startRingTutorial(); else startLevel(G.save.level); return; }
   if (screen === 'game' && G.s && (G.s.won || G.s.lost || G.s.over) && !G.ending) screen = G.s.mode === 'battle' ? 'results' : G.s.won ? 'win' : 'lose';   // в законченную партию не вернуться
   if ((screen === 'pause' || screen === 'win' || screen === 'lose' || screen === 'results') && !G.s) screen = 'map';
@@ -89411,6 +89474,7 @@ $('scr').addEventListener('click', (e) => {
   else if (act.startsWith('tab:')){ G.albumTab = act.slice(4); goto('album'); }
   else if (act.startsWith('albumsec:')){ G.albumSub = +act.slice(9); goto('album'); }
   else if (act.startsWith('sector:')){ G.mapSector = +act.slice(7); goto('map'); }
+  else if (act === 'lockedbattle'){ toast('Complete operation ' + LEVELS[LEVELS.length - 1].n + ' to unlock Battle', 1800); buzz(10); }
   else if (act === 'lockedsector'){ toast('Complete operation ' + CH2 + ' to unlock Sector 2', 1800); }
   else if (act === 'music'){ G.save.music = G.save.music === false; save(); goto(G.screen); }
   else if (act === 'sound'){ G.save.muted = !G.save.muted; save(); updateMuteBtn(); goto(G.screen); }
