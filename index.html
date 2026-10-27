@@ -51,6 +51,12 @@ img{max-width:100%}
 .pill.time{font:700 28px var(--tech);min-width:92px;justify-content:center;gap:5px}
 .pill.time.hurry{background:#ffd0d0;animation:throb .5s ease-in-out infinite alternate}
 .pill.time.battle{min-width:104px;font-size:30px}
+.pill.time.plus{background:#c9ffb0;animation:throb .35s ease-in-out 6 alternate}
+#hud.spot{z-index:9}
+#hud.spot>:not(.hrow),#hud.spot .hrow>:not(#hud-time){visibility:hidden}
+#hud.spot #hud-time{box-shadow:0 0 0 4px #ffd84a,0 0 26px 8px rgba(255,216,74,.75);animation:throb .5s ease-in-out infinite alternate}
+.giftarr{position:absolute;left:50%;top:calc(62px + env(safe-area-inset-top));transform:translateX(-50%);color:#ffd84a;filter:drop-shadow(0 2px 0 #2b2140);animation:giftup .6s ease-in-out infinite alternate}
+@keyframes giftup{from{margin-top:8px}to{margin-top:0}}
 @keyframes throb{from{transform:scale(1)}to{transform:scale(1.07)}}
 .btns{display:flex;gap:6px}
 .ibtn{pointer-events:auto;width:44px;height:44px;border-radius:15px;border:3px solid var(--ink);background:var(--paper);box-shadow:0 4px 0 var(--ink);
@@ -80492,6 +80498,7 @@ const CFG = {
   STRAY_MAX: 60,         // больше отбившихся одновременно не бывает (старых забирают)
   RECOVER_R: 1.1,        // генерал ближе этого к отбившемуся — тот возвращается в строй, м
   CAP_PAD: 6,            // потолок отряда = подсказка главной цели + CAP_PAD (строй не раздувается в нитку)
+  LONG: { FROM: 2, NEED: 1.5, GOAL: 1.6, COMBO: 1.25, CAP: 1.35, TIME: 2.0 },   // 27.10: операции со второй — длиннее (см. после LEVELS)
   OVER_TIME: 0.5,        // опыт сверх потолка превращается в секунды таймера: столько за XP_PER_ALIEN опыта
   // --- рост ступенями, как в hole.io (03.10, Андрей): похищения копят опыт, полная шкала — отряд вырастает на ступень ---
   XP_PER_ALIEN: 1.0,     // сколько опыта стоит один пришелец роста (ценность зверя = его опыт)
@@ -80986,6 +80993,19 @@ const LEVELS = [
     boss: { sp: 'camel', r: 4.0, name: 'Dune the Camel' }, goal: { type: 'boss' },
     hz: { fences: 3, lanes: [ { axis: 'x', speed: 3.0 }, { axis: 'z', speed: 2.4 } ], chasers: 2, chaserSpeed: 2.6 } },
 ];
+// 27.10.2026, Андрей: «после 1 уровня давай сделаем уровни дольше — чтобы их нужно было дольше проходить». Ферма как была
+// (первая партия короткая), с операции LONG.FROM больше сама цель, а не только часы: главной цели нужен отряд ×NEED, золотых и
+// заказа ×GOAL, комбо ×COMBO (и потолок отряда ×CAP, чтобы кольцо было из кого собрать), таймер ×TIME. Версии «Наводки» и
+// «Кучи» (L.aim, L.pile) свои — их не трогаем, поэтому босс и цель — новыми объектами.
+LEVELS.forEach(L => {
+  const K = CFG.LONG, g = L.goal; if (L.n < K.FROM) return;
+  if (L.boss && g.type === 'boss') L.boss = Object.assign({}, L.boss, { need: Math.min(CFG.MAX_SQUAD - CFG.CAP_PAD, Math.round(bossNeed(L.boss) * K.NEED)) });
+  if (g.type === 'gold') L.goal = Object.assign({}, g, { n: Math.round(g.n * K.GOAL) });
+  if (g.type === 'combo') L.goal = Object.assign({}, g, { n: Math.round(g.n * K.COMBO) });
+  if (g.type === 'order') L.goal = Object.assign({}, g, { items: Object.fromEntries(Object.entries(g.items).map(([sp, n]) => [sp, Math.round(n * K.GOAL)])) });
+  if (L.cap) L.cap = Math.min(CFG.MAX_SQUAD, Math.round(L.cap * K.CAP));
+  L.time = Math.round(L.time * K.TIME / 5) * 5;
+});
 // «Наводка»: кампания — свой порядок поверх LEVELS (06.10, вечер; Андрей: «10 уровней с учётом прежнего контента: 0–1 — один
 // биом, дальше ночь, дальше следующие биомы»). 00 — Обучение (TUT_LEVEL на поле Фермы), дальше по списку: Ферма, Ночная ферма,
 // Ранчо, Ярмарка (река), Сафари, Прерия, Льды, Заросли, Водопой. Индексы LEVELS не трогаем — на них держатся обводка, аудит и тесты.
@@ -82973,13 +82993,16 @@ function findLoop(q, radius){
   return { best, d: bd, poly, lo, atTail: H[best].s - lo < CFG.SPACING * 1.5 };
 }
 // Кто в кольце: ids — влезли и будут похищены, tight — центр внутри, но кольцо их режет.
-function classifyLoop(s, poly){
+// 27.10: главная цель влезает в кольцо только при отряде не меньше подсказки bossNeedOf — порог «need N» над ней теперь правило,
+// а не совет (иначе удлинённая операция проходилась обводом раньше подсказки). Чужие отряды в битве боссов не ловят.
+function classifyLoop(s, poly, q){
+  const short = !s.pile && !s.fly && s.L.boss && s.L.n >= CFG.LONG.FROM && ringCap(q || s) < bossNeedOf(s);   // Ферма — как была
   let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
   for (const p of poly){ if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.z < z0) z0 = p.z; if (p.z > z1) z1 = p.z; }
   const ids = [], tight = [];
   for (const a of s.animals){
     if (a.state !== 'free' || a.x < x0 || a.x > x1 || a.z < z0 || a.z > z1 || !pointInPoly(a.x, a.z, poly)) continue;
-    if (distToPoly(a.x, a.z, poly) >= CFG.FIT_K * a.r) ids.push(a.id); else tight.push(a);
+    if (!(a.boss && short) && distToPoly(a.x, a.z, poly) >= CFG.FIT_K * a.r) ids.push(a.id); else tight.push(a);
   }
   return { ids, tight };
 }
@@ -83000,13 +83023,14 @@ function tryClose(s, q){
   const poly = f.poly, best = f.best;
   q.closeFloorS = q.headS;
   const ringN = Math.min(q.n, Math.floor((q.headS - H[best].s) / CFG.SPACING) + 1);
-  const { ids, tight } = classifyLoop(s, poly);
+  const { ids, tight } = classifyLoop(s, poly, q);
+  if (q === s && ids.length) for (const a of tight) if (a.boss){ s.failedTight++; emit(s, 'tight', { id: a.id, need: bossNeedOf(s) }); }   // мелочь взял, а главная цель не влезла — показать, сколько нужно
   const eat = [];                                                        // битва: чужие генералы в кольце
   if (s.mode === 'battle') for (const r of s.squads) if (r !== q && r.alive && pointInPoly(r.leader.x, r.leader.z, poly) && distToPoly(r.leader.x, r.leader.z, poly) >= CFG.ALIEN_R) eat.push(r);
   const stp = Math.max(1, Math.floor(poly.length / CFG.LOOP_PTS)), loop = [];
   for (let i = 0; i < poly.length; i += stp) loop.push({ x: poly[i].x, z: poly[i].z });
   if (!ids.length && !eat.length){
-    if (q === s){ if (tight.length){ s.failedTight++; for (const a of tight) emit(s, 'tight', { id: a.id, need: needUI(a.r) }); } else s.emptyLoops++; }
+    if (q === s){ if (tight.length){ s.failedTight++; for (const a of tight) emit(s, 'tight', { id: a.id, need: a.boss ? bossNeedOf(s) : needUI(a.r) }); } else s.emptyLoops++; }
     emit(s, 'close', { cap: 0, ids: [], ringN, loop, q: q.id });
     return;
   }
@@ -83464,7 +83488,7 @@ function botPick(s, B, q, P){
   const Ld = q.leader, free = botFree(s), wrong = B.rnd() < P.wrong;      // в зарослях — только шевеление (botFree)
   const combo = s.goal.type === 'combo' && q === s, order = s.goal.type === 'order' && q === s;
   const boss = s.bossId ? free.find(a => a.id === s.bossId) : null;
-  if (boss && boss.swim && q.n >= bossNeed(s.L.boss) * 0.95 && !((B.ban.r || 0) > s.t)) return { type: 'route', key: 'r', route: hippoRoute(s, boss, q) };
+  if (boss && boss.swim && ringCap(q) >= bossNeedOf(s) && !((B.ban.r || 0) > s.t)) return { type: 'route', key: 'r', route: hippoRoute(s, boss, q) };
   let best = null, bs = Infinity;
   for (const o of free){
     if ((B.ban['a' + o.id] || 0) > s.t) continue;
@@ -84624,6 +84648,7 @@ const SH = {
   RING_DOTS: 22,          // пунктир прогресса вокруг окружаемого зверя, точек
   END_WIN: 1.5,           // пауза перед экраном победы (сим-время), с
   END_LOSE: 0.9,          // перед экраном «время вышло», с
+  FREE_CONT: 45,          // 27.10: первое «время вышло» в жизни игрока — бесплатно и с подсказкой про часы, секунд (за рекламу — RC.continue_seconds)
   SHAKE_CLOSE: 0.12,      // тряска камеры при замыкании, м
   SHAKE_BOSS: 0.45,       // при похищении главной цели, м
   PREVIEW_R: 2.2,         // голова ближе этого к своему строю — показываем, что окажется в кольце, м
@@ -86374,6 +86399,7 @@ function onEvent(e){
   }
   else if (e.type === 'capFull' && (s.aim || G.tr)){}                          // «Наводка»: «тарелка — максимум» уже сказала новая ступень
   else if (e.type === 'capFull'){ banner(pic('alien', 'width:30px;height:30px;margin:-7px 4px -7px 0;vertical-align:middle') + 'Squad is full!', s.L.boss ? 'Extra aliens give you seconds — time to go for the main target' : 'Extra aliens give you seconds'); Sfx.unlock(); }
+  else if (e.type === 'lose' && freeContOn(s)){ G.ending = s.t + SH.END_LOSE; G.endKind = 'gift'; Sfx.tick(); log('event', 'level.timeout', 'level=' + levelNo() + ' free'); }   // первый раз — не поражение, а урок про часы
   else if (e.type === 'lose'){ G.ending = s.t + SH.END_LOSE; G.endKind = 'lose'; Sfx.lose(); metaLose(s); log('event', 'level.lose', 'level=' + levelNo() + ' n=' + s.n); }
   // --- правила кампании ---
   else if (e.type === 'pen'){
@@ -88748,6 +88774,7 @@ const ICONS = {
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
   close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
   back: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
+  up: '<path d="M12 19V6M6 11.5 12 5.5l6 6"/>',
   clock: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9.2V13l2.6 2M9.5 2.8h5"/>',
   crown: '<path d="M3.5 8.5 7.8 12 12 5.5l4.2 6.5 4.3-3.5-1.8 10H5.3L3.5 8.5Z"/>',
   check: '<path d="M5 12.5l4.3 4.3L19 7.2"/>',
@@ -89379,6 +89406,17 @@ function scrLose(){
              : '<button class="bigbtn" data-act="retry" style="flex-shrink:0">' + 'Again' + '</button>') + wallBtns +
     '<button class="btn2" data-act="map" style="flex-shrink:0">To map</button></div></div>';
 }
+// Первое «время вышло» (27.10, Андрей: «первый ривайв с туториалом и бесплатный — чтобы чётко было понятно, что есть время, но
+// игрок не расстроился, и первый раз дадим больше времени»). Не экран поражения: партия стоит, часы в HUD подняты над
+// затемнением и подсвечены, стрелка на них, одна кнопка — +SH.FREE_CONT секунд даром. Раз на игрока (G.save.freeCont);
+// рекламное продолжение на этой операции остаётся.
+function freeContOn(s){ return s.mode !== 'battle' && !s.aim && !s.fly && s.goal.type !== 'tut' && !G.save.freeCont; }
+function scrGift(){
+  return '<div class="scr" style="justify-content:center;background:rgba(20,11,51,.6)"><div class="giftarr">' + ic('up', 34, 3) + '</div>' +
+    '<div class="cardc paper"><div class="tlabel" style="color:var(--mutedD)">Tip</div><h2>Out of time!</h2>' +
+    '<p>Every operation has a clock — it\'s up there. When it hits <b>0:00</b>, the operation is over.</p><p>Your first time is on us:</p>' +
+    '<button class="bigbtn" data-act="freecont">+' + SH.FREE_CONT + ' seconds<small>free · keep playing</small></button></div></div>';
+}
 function scrPause(){
   const s = G.s, name = s ? (s.mode === 'battle' ? 'Squad Battle' : s.L.name) : '';
   return '<div class="scr" style="justify-content:center;background:rgba(20,11,51,.6)"><div class="cardc paper"><div class="tlabel" style="color:var(--mutedD)">' + name + '</div><h2>Paused</h2>' +
@@ -89428,21 +89466,21 @@ function scrHelp(){
     '</ul></div>' + navBar('') + '</div>';
 }
 // --- переходы ---
-const SCREENS = ['map', 'mission', 'lab', 'album', 'battle', 'help', 'game', 'pause', 'win', 'lose', 'results'];
+const SCREENS = ['map', 'mission', 'lab', 'album', 'battle', 'help', 'game', 'pause', 'gift', 'win', 'lose', 'results'];
 function goto(screen, arg){
   if (screen === 'menu' || (G.core === 'aim' && (screen === 'lab' || screen === 'battle'))) screen = 'map';   // «Наводка»: Лаборатории и Битвы (PvP) нет
   if (screen === 'battle' && !battleOn()) screen = 'map';                // битва — после всех операций
   if (screen === 'game' && !G.s){ if (G.core === 'aim') startOp(aimDoneN() + 1); else if (!G.save.tutRing) startRingTutorial(); else startLevel(G.save.level); return; }
   if (screen === 'game' && G.s && (G.s.won || G.s.lost || G.s.over) && !G.ending) screen = G.s.mode === 'battle' ? 'results' : G.s.won ? 'win' : 'lose';   // в законченную партию не вернуться
-  if ((screen === 'pause' || screen === 'win' || screen === 'lose' || screen === 'results') && !G.s) screen = 'map';
-  G.screen = screen; log('screen', screen); INP.down = false; INP.keys = {}; PTRS.clear(); G.drawOnce = screen === 'pause';
+  if ((screen === 'pause' || screen === 'gift' || screen === 'win' || screen === 'lose' || screen === 'results') && !G.s) screen = 'map';
+  G.screen = screen; log('screen', screen); INP.down = false; INP.keys = {}; PTRS.clear(); G.drawOnce = screen === 'pause' || screen === 'gift';
   musicFor(screen);
-  const ov = $('overlay'), inGame = ['game', 'pause'].includes(screen);
-  $('hud').style.visibility = G.s && inGame ? 'visible' : 'hidden';
+  const ov = $('overlay'), inGame = ['game', 'pause', 'gift'].includes(screen);
+  $('hud').style.visibility = G.s && inGame ? 'visible' : 'hidden'; $('hud').classList.toggle('spot', screen === 'gift');   // подарок: часы — поверх затемнения
   if (screen === 'game'){ ov.classList.remove('show'); G.lastNow = performance.now(); histGuard(); return; }
   ov.classList.add('show');
   ov.style.background = inGame ? '' : 'var(--space)';   // меню непрозрачно: экран проявляется (fade с .4) — без него сквозь него мигало зелёное поле прошлой партии
-  const html = { map: scrMap, mission: () => scrMission(arg !== undefined ? arg : G.missionLi), lab: scrLab, album: scrAlbum, battle: scrBattle, help: scrHelp, pause: scrPause, win: scrWin, lose: scrLose, results: scrResults }[screen];
+  const html = { map: scrMap, mission: () => scrMission(arg !== undefined ? arg : G.missionLi), lab: scrLab, album: scrAlbum, battle: scrBattle, help: scrHelp, pause: scrPause, gift: scrGift, win: scrWin, lose: scrLose, results: scrResults }[screen];
   if (screen === 'mission' && arg !== undefined) G.missionLi = arg;
   $('scr').innerHTML = html ? html() : '';
   if (screen === 'map' && G.core === 'aim'){ const c = document.querySelector('.aop.cur'); if (c && c.scrollIntoView) try { c.scrollIntoView({ block: 'center' }); } catch (e) { c.scrollIntoView(); } }
@@ -89454,6 +89492,7 @@ $('scr').addEventListener('click', (e) => {
   if (act.startsWith('aop')) startOp(+act.slice(3));
   else if (act === 'adx2'){ adPlace = 'double gems'; showRewarded(adDouble); }
   else if (act === 'adcont'){ adPlace = 'continue'; showRewarded(adContinue); }
+  else if (act === 'freecont') freeContinue();
   else if (G.core === 'ring' && !G.save.tutRing && (act === 'op0' || act === 'go0')) startRingTutorial();   // обводка: первый вход — предуровень 00
   else if (act.startsWith('op')){ if (G.core === 'aim') startLevel(+act.slice(2)); else goto('mission', +act.slice(2)); }   // «Наводка»: без экрана «Досье» — сразу в игру
   else if (act === 'lockedop'){ toast(G.core === 'aim' && !G.save.tutAim ? 'Finish the tutorial first' : 'Finish the previous operation first', 1600); }
@@ -89504,13 +89543,24 @@ function adDouble(){
 }
 function adContinue(){
   const s = G.s; if (!s || !s.lost || s.mode === 'battle') return;
-  s.contN = (s.contN || 0) + 1; s.lost = false; s.endT = 0;
-  s.bonusT += Math.max(0, s.t - timeLimit(s)) + RC.continue_seconds;   // часы: ровно continue_seconds сверх уже вышедшего времени
-  G.ending = 0; G.endKind = ''; G.reward = null; G.lastTick = -1;
+  s.contN = (s.contN || 0) + 1;
   if (G.runLog){ G.runLog.species = {}; G.runLog.gold = 0; G.runLog.goldSp = {}; }   // похищенное до поражения уже засчитано в metaLose
   if (G.save.loseRun[G.li]) G.save.loseRun[G.li]--; save();
   log('event', 'level.continue', 'level=' + levelNo() + ' +' + RC.continue_seconds + 's');
-  goto('game'); banner('+' + RC.continue_seconds + ' seconds!', 'keep going'); Sfx.unlock();
+  contResume(RC.continue_seconds, 'keep going');
+}
+function freeContinue(){
+  const s = G.s; if (!s || !s.lost || G.save.freeCont) return;
+  G.save.freeCont = true; save();                                   // metaLose не звали — наград и счётчика поражений нет
+  log('event', 'level.continue', 'level=' + levelNo() + ' +' + SH.FREE_CONT + 's free');
+  contResume(SH.FREE_CONT, 'watch the clock');
+}
+function contResume(sec, sub){
+  const s = G.s; s.lost = false; s.endT = 0;
+  s.bonusT += Math.max(0, s.t - timeLimit(s)) + sec;                // часы: ровно sec сверх уже вышедшего времени
+  G.ending = 0; G.endKind = ''; G.reward = null; G.lastTick = -1;
+  goto('game'); banner('+' + sec + ' seconds!', sub); Sfx.unlock();
+  const el = $('hud-time'); el.classList.add('plus'); setTimeout(() => el.classList.remove('plus'), 2400);   // часы вспыхивают зелёным
 }
 function updateMuteBtn(){ $('btn-mute').innerHTML = ic(G.save.muted ? 'mute' : 'sound', 22, 2.6); }
 $('btn-mute').onclick = () => { Sfx.init(); G.save.muted = !G.save.muted; save(); updateMuteBtn(); log('input', 'button', 'mute=' + G.save.muted); musicFor(G.screen); };
