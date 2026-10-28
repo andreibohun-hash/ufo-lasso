@@ -41,7 +41,18 @@ img{max-width:100%}
 #hud{position:absolute;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 10px 0;pointer-events:none;color:var(--textDark);display:flex;flex-direction:column;gap:8px}
 .hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .pill{background:var(--paper);border:3px solid var(--ink);border-radius:19px;box-shadow:0 4px 0 var(--ink);color:var(--textDark);display:flex;align-items:center;gap:6px;height:50px;padding:0 12px;white-space:nowrap}
-.pill.squad{padding:0 12px 0 4px;gap:4px}
+.pill.squad{padding:0 12px 0 4px;gap:4px;transform-origin:30% 50%}
+/* 28.10 (вечер, Андрей): счётчик отряда «баунсит» на каждое изменение — потеря красным с дрожью, прибавка зелёным, новый уровень крупнее */
+.pill.squad.sqhurt{animation:sqHurt .55s ease-out}.pill.squad.sqhurt b{color:#e23b3b}
+.pill.squad.sqgain{animation:sqGain .45s cubic-bezier(.3,1.6,.5,1)}.pill.squad.sqgain b{color:#2e9e3a}
+.pill.squad.sqlvl{animation:sqLvl .8s cubic-bezier(.3,1.6,.5,1)}
+@keyframes sqHurt{0%{transform:scale(1)}15%{transform:scale(1.28) rotate(-6deg)}30%{transform:scale(1.2) rotate(5deg)}45%{transform:scale(1.14) rotate(-3deg)}100%{transform:none}}
+@keyframes sqGain{0%{transform:scale(1)}35%{transform:scale(1.22)}100%{transform:none}}
+@keyframes sqLvl{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,211,77,.9)}30%{transform:scale(1.42)}60%{box-shadow:0 0 0 14px rgba(255,211,77,0)}100%{transform:none}}
+/* урон — красное по краям экрана (28.10, Андрей) */
+#hurt{position:absolute;inset:0;pointer-events:none;z-index:7;opacity:0;box-shadow:inset 0 0 70px 22px rgba(255,36,36,.85)}
+#hurt.on{animation:hurtFlash .7s ease-out}
+@keyframes hurtFlash{0%{opacity:0}12%{opacity:1}35%{opacity:.55}50%{opacity:.85}100%{opacity:0}}
 .pill.squad .ava{position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
 .pill.squad .ava img{width:36px;height:36px;position:relative}
 .pill.squad .ava svg{position:absolute;left:-3px;top:-3px}
@@ -100,6 +111,12 @@ img{max-width:100%}
 .slot{width:46px;height:46px;border-radius:14px;border:3px solid var(--ink);background:#efe9fb;display:flex;align-items:center;justify-content:center;overflow:hidden;font:900 20px var(--round);color:#c9bfe3}
 .slot.on{background:radial-gradient(circle at 50% 35%,#fff3b0 0%,#ffc21a 70%)} .slot img{width:42px;height:42px}
 .dots{display:flex;gap:4px;flex-wrap:wrap} .dot{width:20px;height:20px;border-radius:50%;border:2.5px solid var(--ink);background:#efe9fb} .dot.on{background:var(--lime2)}
+.nrow{position:relative;display:flex;justify-content:center;min-height:30px}
+/* Skip (28.10, Андрей: «кнопка скип уровня, похожая как в Rubik Arrows»): тихая плашка справа в строке «next», пропуск за ролик */
+.skipbtn{position:absolute;right:0;top:0;pointer-events:auto;display:flex;align-items:center;gap:4px;height:30px;padding:0 8px 0 11px;border:0;border-radius:14px;
+  background:rgba(43,33,64,.82);color:#fff;font:800 13px var(--round);cursor:pointer}
+.skipbtn i{font:900 9px var(--round);font-style:normal;background:#ffd34d;color:var(--ink);border-radius:6px;padding:2px 4px;margin-left:2px}
+.skipbtn:active{transform:scale(.95)}
 #next{align-self:center;max-width:100%;display:flex;align-items:center;gap:6px;padding:5px 12px 5px 8px;border-radius:14px;background:rgba(43,33,64,.82);color:#fff;font:800 13px var(--round);text-align:center}
 #next:empty{display:none}
 #next.rule{background:var(--pink);border:2.5px solid var(--ink)}
@@ -361,13 +378,14 @@ body.tut-on #toast{display:none}
     </div>
     <div id="goal" class="goal"></div>
     <div id="board" class="board"></div>
-    <div id="next"></div>
+    <div class="nrow"><div id="next"></div><button id="btn-skip" class="skipbtn" hidden aria-label="Skip level">Skip<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><polygon points="3 5 12 12 3 19"/><polygon points="12 5 21 12 12 19"/></svg><i>AD</i></button></div>
     <div id="ann"></div>
   </div>
   <div id="tutp" class="hide"><small id="tutp-k"></small><div id="tutp-t"></div></div>
   <div id="thr" class="hide"><div class="thr-card"><div class="thr-ph" id="thr-ph"></div><div class="thr-tx"><small id="thr-k">Saucer threat</small><b id="thr-n"></b><p id="thr-d"></p><p class="how" id="thr-h"></p></div><button class="bigbtn" id="thr-ok">Got it</button></div></div>
   <div id="feedbox"></div>
   <div id="banner" class="hide"></div>
+  <div id="hurt"></div>
   <div id="toast" class="hide"></div>
   <div id="adstub" class="hide"><b>AD</b><small id="adstub-k"></small></div>
   <div id="overlay"><div id="scr"></div></div>
@@ -80997,6 +81015,13 @@ const LEVELS = [
 // (первая партия короткая), с операции LONG.FROM больше сама цель, а не только часы: главной цели нужен отряд ×NEED, золотых и
 // заказа ×GOAL, комбо ×COMBO (и потолок отряда ×CAP, чтобы кольцо было из кого собрать), таймер ×TIME. Версии «Наводки» и
 // «Кучи» (L.aim, L.pile) свои — их не трогаем, поэтому босс и цель — новыми объектами.
+// 28.10 (вечер, Андрей): «заборы непонятные — уберём; с фермером как на Наводке — выхватывает животных, а не дамажит нас».
+// Электропастуха в обводке нет; сторож (chasers) больше не гоняется за генералом — вместо него фермеры «Наводки» у стад (ringFarmers).
+LEVELS.forEach(L => { if (!L.hz) return; L.ringFarmers = L.hz.chasers || 0; L.hz = Object.assign({}, L.hz, { fences: 0, chasers: 0 }); });
+// Золотые звери с 6-й операции на всех уровнях (28.10, Андрей: «как в Наводке, но без морковки») — бонус кристаллами, не цель:
+// по одному, пугливые, живут 14 с; виды — три первых стада уровня (мелкие — по силам отряду).
+const ringGolden = L => ({ first: 12, every: 18, life: 14, sp: L.herds.map(h => h.sp).sort((a, b) => SPECIES[a].r - SPECIES[b].r).slice(0, 2) });   // два самых мелких вида стад
+LEVELS.forEach(L => { if (L.n >= 6 && !L.golden && L.herds) L.ringGolden = ringGolden(L); });   // только обводка: у «Наводки» (L.aim) своё
 LEVELS.forEach(L => {
   const K = CFG.LONG, g = L.goal; if (L.n < K.FROM) return;
   if (L.boss && g.type === 'boss') L.boss = Object.assign({}, L.boss, { need: Math.min(CFG.MAX_SQUAD - CFG.CAP_PAD, Math.round(bossNeed(L.boss) * K.NEED)) });
@@ -81006,6 +81031,56 @@ LEVELS.forEach(L => {
   if (L.cap) L.cap = Math.min(CFG.MAX_SQUAD, Math.round(L.cap * K.CAP));
   L.time = Math.round(L.time * K.TIME / 5) * 5;
 });
+// +50 операций после 17-й (28.10, вечер, Андрей: «уровни надо зациклить … либо добавить ещё 50 уровней из тех же биомов, только
+// с другими целями и боссами»). Строятся из 17 базовых по кругу (Ранчо … Бархан, Ферма): тот же биом, поле, правило и угрозы,
+// новое зерно карты, другая цель — босс из зверей своего биома с новым именем, заказ, комбо или золото (не та, что у базы).
+// Каждый круг по базе — цель ×(1 + GEN.GROW·круг). Номера 18–67, на карте — сектора 3–8 по 9 узлов. Порядок и имена — без
+// случайности: одно и то же у всех игроков (журнал, удалённый конфиг).
+const BASE_N = LEVELS.length;
+const GEN = { N: 50, GROW: 0.12, NAMES: ['Biscuit', 'Rosie', 'Thunder', 'Pepper', 'Mango', 'Ziggy', 'Coco', 'Duke', 'Peanut', 'Bruno', 'Hazel', 'Tank', 'Clover', 'Rocky', 'Maple', 'Nugget', 'Gus', 'Ruby', 'Waffles', 'Bonnie', 'Pickles', 'Moose', 'Truffle', 'Boomer'] };
+function genLevels(){
+  const one = sp => { const a = SPECIES[sp].acc.replace(/^an? /, ''); return a[0].toUpperCase() + a.slice(1); };
+  const pool = {};                                                       // звери биома: стада и главные цели всех операций этого биома
+  for (const L of LEVELS.slice(0, BASE_N)){ const P = pool[L.theme] || (pool[L.theme] = new Set()); L.herds.forEach(h => P.add(h.sp)); if (L.boss) P.add(L.boss.sp); }
+  const roman = ['', '', 'II', 'III', 'IV', 'V'], kinds = ['boss', 'order', 'boss', 'combo', 'boss', 'gold'];   // босс — на каждом втором: «другие боссы»
+  for (let g = 0; g < GEN.N; g++){
+    const c = Math.floor(g / BASE_N), T = LEVELS[(g % BASE_N + 1) % BASE_N], f = 1 + GEN.GROW * (c + 1), n = BASE_N + g + 1;
+    let kind = kinds[(g * 5 + c) % kinds.length]; if (kind === T.goal.type && kind !== 'boss') kind = 'boss';   // у базы-босса — другой босс
+    if (kind === 'combo' && T.rule !== 'tornado' && T.rule !== 'oasis') kind = 'order';   // большое комбо — только где стадо сбивается в кучу (бот: без кучи 10 разом не выходит)
+    const L = Object.assign({}, T, { n, id: 'g' + n, seed: 100 + g, name: T.name + ' ' + roman[c + 2], gen: true, tpl: T.id, aim: undefined, pile: undefined });
+    L.golden = T.golden || ringGolden(T); L.ringGolden = undefined;
+    L.herds = T.herds.map(h => Object.assign({}, h, { n: Math.round(h.n * (1 + 0.5 * (f - 1))) }));
+    delete L.cap; L.boss = undefined;
+    const big = Math.min(1.5, Math.max(1, T.field[0] * T.field[1] / 450));   // большое поле — бегать дольше: заказ и золото по времени
+    if (kind === 'boss'){
+      const cand = [...pool[T.theme]].filter(sp => sp !== (T.boss && T.boss.sp) && sp !== 'hippo' && SPECIES[sp].r >= 0.5).sort((a, b) => SPECIES[b].r - SPECIES[a].r);
+      const sp = cand[(g * 3 + c) % Math.max(1, Math.min(4, cand.length))] || 'cow', r = Math.min(3.8, Math.max(1.4, SPECIES[sp].r * (1.7 + 0.3 * c)));
+      L.boss = Object.assign({}, T.boss && T.boss.lock ? { lock: T.boss.lock } : {}, { sp, r, name: GEN.NAMES[(g * 7) % GEN.NAMES.length] + ' the ' + one(sp) });
+      L.boss.need = Math.min(CFG.MAX_SQUAD - CFG.CAP_PAD, Math.round(needUI(r) * CFG.LONG.NEED * f));
+      L.goal = { type: 'boss' };
+      L.time = Math.round(Math.max(T.time, 120 + L.boss.need * 2.2) * (1 + 0.4 * (f - 1)) / 5) * 5;
+    }
+    else if (kind === 'order'){
+      const hs = T.herds.slice(0, 3), base = [14, 10, 7];
+      L.goal = { type: 'order', items: Object.fromEntries(hs.map((h, i) => [h.sp, Math.round(base[i] * CFG.LONG.GOAL * f / 1.6)])) };
+      L.cap = Math.min(CFG.MAX_SQUAD, Math.round(46 * CFG.LONG.CAP * f));
+      L.time = Math.round(Math.max(T.time, 230) * (1 + 0.4 * (f - 1)) * big / 5) * 5;
+    }
+    else if (kind === 'combo'){
+      L.goal = { type: 'combo', n: Math.round(11 * CFG.LONG.COMBO * f) };
+      L.cap = Math.min(CFG.MAX_SQUAD, Math.round(L.goal.n * 4.4));
+      L.time = Math.round(Math.max(T.time, 210) * (1 + 0.4 * (f - 1)) / 5) * 5;
+    }
+    else {
+      L.goal = { type: 'gold', n: Math.round(3 * CFG.LONG.GOAL * f) };
+      L.golden = Object.assign({}, L.golden, { first: 6, every: 8 });   // цель — золото: золотые идут чаще, как на Золотой лихорадке
+      L.cap = Math.min(CFG.MAX_SQUAD, Math.round(41 * CFG.LONG.CAP * f));
+      L.time = Math.round(Math.max(T.time, 200) * (1 + 0.4 * (f - 1)) * big / 5) * 5;
+    }
+    LEVELS.push(L);
+  }
+}
+genLevels();
 // «Наводка»: кампания — свой порядок поверх LEVELS (06.10, вечер; Андрей: «10 уровней с учётом прежнего контента: 0–1 — один
 // биом, дальше ночь, дальше следующие биомы»). 00 — Обучение (TUT_LEVEL на поле Фермы), дальше по списку: Ферма, Ночная ферма,
 // Ранчо, Ярмарка (река), Сафари, Прерия, Льды, Заросли, Водопой. Индексы LEVELS не трогаем — на них держатся обводка, аудит и тесты.
@@ -81061,7 +81136,9 @@ const ECON = {
   AVG_BATTLE: 30,         // средний игрок: кристаллов за битву
 };
 const CH2 = 8;                                         // индекс первой операции главы 2 (05.10: был 9 — убран Птичий двор)
-function chapterOf(li){ return li >= CH2 ? 2 : 1; }
+function chapterOf(li){ return li >= CH2 ? 2 : 1; }   // глава — экономика и правила (операции 18+ — как глава 2)
+function sectorOf(li){ return li < BASE_N ? chapterOf(li) : 3 + Math.floor((li - BASE_N) / SECTOR_N); }   // сектор карты: 1, 2, дальше по 9 узлов (28.10)
+const SECTOR_N = 9;
 function winGems(li, first){ const g = ECON.WIN0 + ECON.WIN_STEP * li; return first ? g : Math.round(g * ECON.REPLAY_K); }
 function starGems(li){ return ECON.STAR[chapterOf(li) - 1]; }
 function bossGems(li){ return ECON.BOSS[chapterOf(li) - 1]; }
@@ -81256,8 +81333,10 @@ function createState(li, ws, opts){                // ws — сид мира (0 
   placeHazards(s, rnd);
   if (tutRing) for (const T of s.tractors){ if (T.axis === 'x'){ T.line = T.z = s.leader.z - L.laneAhead; } T.parked = true; T.x = T.axis === 'x' ? T.max : T.line; if (T.axis !== 'x') T.z = T.max; }   // колея впереди старта, трактор стоит у края
   if (aim) placeAimThreats(s, rnd, L);                                  // «Наводка»: пёс, стрелок, норы (после стад и босса — карты те же)
+  else if (!beam && !pile && !tutRing && L.ringFarmers) placeAimThreats(s, rnd, { farmers: L.ringFarmers });   // обводка: фермеры у стад (28.10)
   if (L.tornado){ const T = Object.assign({ x: 0, z: 0, vx: 0, vz: 0, tx: 0, tz: 0, state: 'spin', until: 0, nextT: 0, cutT: -9 }, L.tornado); spawnTornado(s, T, 12); s.tornados.push(T); }
-  if (L.golden) s.gold = { cfg: L.golden, next: L.golden.first, cur: 0, k: 0, gone: 0 };
+  const GL = L.golden || (!aim && !beam && !pile && !tutRing ? L.ringGolden : null);
+  if (GL) s.gold = { cfg: GL, next: GL.first, cur: 0, k: 0, gone: 0 };
   for (const sp of levelSpecies(L)) if (s.aim ? spR(L, sp) + CFG.AIM.PAD <= aimR(s) : s.beam ? spR(L, sp) + CFG.BEAM.PAD <= beamR(s) : ringCap(s) >= needFor(s.pile, spR(L, sp))) s.unlocked[sp] = true;
   for (const p of s.pens) if (s.n >= penNeedUI(p)) s.unlocked['pen' + p.k] = true;
   updateAliens(s);
@@ -82861,7 +82940,8 @@ function step(s, input){
   if (s.crew) stepCrew(s, s);                                        // «Куча-мала»: толпа окружает зверей
   if (s.beam) stepBeam(s);                                           // «Тарелка»: луч поднимает тех, кто влезает
   if (s.aim) stepAim(s, input);                                      // «Наводка»: выстрелы и удары лучом
-  if (s.aim && !over) stepAimThreats(s);                             // «Наводка»: пёс, стрелок, норы
+  if (s.aim && !over) stepAimThreats(s);
+  else if (!over && s.farmers && s.farmers.length) stepFarmers(s);    // обводка: фермеры выхватывают зверей (28.10)                             // «Наводка»: пёс, стрелок, норы
   if (!over){ cutChain(s); stepLights(s); stepTornados(s); }
   // 4) замыкание
   if (moved && !frozen && !s.crew) tryClose(s, s);
@@ -82996,12 +83076,12 @@ function findLoop(q, radius){
 // 27.10: главная цель влезает в кольцо только при отряде не меньше подсказки bossNeedOf — порог «need N» над ней теперь правило,
 // а не совет (иначе удлинённая операция проходилась обводом раньше подсказки). Чужие отряды в битве боссов не ловят.
 function classifyLoop(s, poly, q){
-  const short = !s.pile && !s.fly && s.L.boss && s.L.n >= CFG.LONG.FROM && ringCap(q || s) < bossNeedOf(s);   // Ферма — как была
+  const short = !s.pile && !s.fly && s.L.boss && ringCap(q || s) < bossNeedOf(s);   // 28.10 (вечер): и на Ферме — Андрей обвёл Зорьку «сильно меньшим» отрядом
   let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
   for (const p of poly){ if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.z < z0) z0 = p.z; if (p.z > z1) z1 = p.z; }
   const ids = [], tight = [];
   for (const a of s.animals){
-    if (a.state !== 'free' || a.x < x0 || a.x > x1 || a.z < z0 || a.z > z1 || !pointInPoly(a.x, a.z, poly)) continue;
+    if (a.state !== 'free' || a.held || a.x < x0 || a.x > x1 || a.z < z0 || a.z > z1 || !pointInPoly(a.x, a.z, poly)) continue;   // у фермера в руках — не взять
     if (!(a.boss && short) && distToPoly(a.x, a.z, poly) >= CFG.FIT_K * a.r) ids.push(a.id); else tight.push(a);
   }
   return { ids, tight };
@@ -83119,12 +83199,16 @@ function dogBark(s, d){
 // держит его HOLD_T, потом отпускает (тот удирает) и гордится PROUD_T; не успел — «ЭХ!» LATE_T. Потом пауза CD и назад к стаду.
 // Боссов и золотых не трогает. Тарелке ничего не делает. Скорость и радиус растут со ступенью (HEAT).
 function newFarmer(id, p){ return { id, x: p.x, z: p.z, ox: p.x, oz: p.z, vx: 0, vz: 0, hx: 0, hz: 1, home: { x: p.x, z: p.z }, mode: 'idle', t0: 0, until: 0, cd: 0, tgt: 0, aid: 0 }; }
-function farmPar(s){ const F = CFG.AIM.FARM, H = CFG.AIM.HEAT, hk = aimHeat(s); return Object.assign({}, F, { WATCH_R: F.WATCH_R + H.FARM_R * hk, RUN_V: F.RUN_V * (1 + H.FARM_V * hk) }); }
+function farmPar(s){ const F = CFG.AIM.FARM, H = CFG.AIM.HEAT, hk = s.aim ? aimHeat(s) : 0; return Object.assign({}, F, { WATCH_R: F.WATCH_R + H.FARM_R * hk, RUN_V: F.RUN_V * (1 + H.FARM_V * hk) }); }
 function farmLifting(s, a){ return a.state === 'zapped' && s.caps.some(c => !c.recruited && c.ids.includes(a.id)); }
 function farmAimed(s, a){ return a.state === 'free' && !a.held && (!!a.mark || (s.lock > 0 && a.lockedUntil > s.t)); }
+// Обводка (28.10): фермер стережёт зверей у себя в зоне — генерал подошёл к зверю ближе FARM_RING_R (обводит) или зверя уже
+// уносит луч — бежит и выхватывает. Отряд не трогает.
+const FARM_RING_R = 3.5;
+function farmWanted(s, a){ return s.aim ? farmAimed(s, a) || farmLifting(s, a) : farmLifting(s, a) || (a.state === 'free' && !a.held && Math.hypot(a.x - s.leader.x, a.z - s.leader.z) < FARM_RING_R); }
 function farmPrey(s, f, F){
   let best = null, bd = F.WATCH_R;
-  for (const a of s.animals){ if (a.boss || a.gold || a.held || !(farmAimed(s, a) || farmLifting(s, a))) continue;
+  for (const a of s.animals){ if (a.boss || a.gold || a.held || !farmWanted(s, a)) continue;
     const d = Math.hypot(a.x - f.x, a.z - f.z); if (d < bd){ bd = d; best = a; } }
   return best;
 }
@@ -83139,7 +83223,7 @@ function stepFarmers(s){
     }
     else if (f.mode === 'run'){
       const a = s.animals.find(o => o.id === f.tgt);
-      if (!a || !(farmAimed(s, a) || farmLifting(s, a))){ const gone = !a || a.state !== 'free'; f.tgt = 0;   // унесли — «ЭХ!»; отпустили — назад
+      if (!a || !(s.aim ? farmAimed(s, a) || farmLifting(s, a) : farmLifting(s, a) || (a.state === 'free' && !a.held && Math.hypot(a.x - f.home.x, a.z - f.home.z) < F.WATCH_R + 3))){ const gone = !a || a.state !== 'free'; f.tgt = 0;   // унесли — «ЭХ!»; отпустили — назад
         if (gone){ f.mode = 'late'; f.until = t + F.LATE_T; f.cd = t + F.LATE_T + F.CD; emit(s, 'farmLate', { id: f.id, x: f.x, z: f.z }); } else { f.mode = 'back'; f.cd = t + 0.5; } }
       else if (t - f.t0 >= F.REACT_T){ const dx = a.x - f.x, dz = a.z - f.z, d = Math.hypot(dx, dz) || 1e-3;
         if (d < F.GRAB_R + a.r * 0.5) farmRescue(s, f, a); else { vx = dx / d * F.RUN_V; vz = dz / d * F.RUN_V; } }
@@ -83159,7 +83243,7 @@ function farmRescue(s, f, a){
   if (air){ const c = s.caps.find(o => !o.recruited && o.ids.includes(a.id));
     if (c){ c.ids = c.ids.filter(id => id !== a.id); c.gain = Math.max(0, c.gain - ((c.share && c.share[a.id]) || 0)); if (!c.ids.length){ c.recruited = true; c.done = true; } }
     s.abducted = Math.max(0, s.abducted - 1); a.state = 'free'; }
-  for (const m of s.marks){ const i = m.ids.indexOf(a.id); if (i >= 0) m.ids.splice(i, 1); }
+  for (const m of s.marks || []){ const i = m.ids.indexOf(a.id); if (i >= 0) m.ids.splice(i, 1); }
   a.mark = 0; a.lockedUntil = 0; a.held = f.id + 1; a.vx = 0; a.vz = 0; a.spookUntil = 0;
   f.mode = 'hold'; f.aid = a.id; f.tgt = 0; f.until = s.t + CFG.AIM.FARM.HOLD_T;
   emit(s, 'farmSave', { id: f.id, aid: a.id, sp: a.sp, x: a.x, z: a.z, air });
@@ -84495,7 +84579,7 @@ Object.assign(ART, {
     { g: 's', c: BLUSH, p: [0.2, 2.03, 1.07], s: [0.07, 0.04, 0.03], a: 'h', m: 1, no: 1 },
   ] },
 });
-for (const sp of ['chick', 'bunny', 'piglet', 'sheep', 'goat', 'monkey']) ART['gold_' + sp] = goldArt(ART[sp]);
+for (const sp in SPECIES) if (ART[sp]) ART['gold_' + sp] = goldArt(ART[sp]);   // 28.10: золотые — на всех уровнях с 6-го, вид любого стада
 // Высота модели (в единицах модели) — для лазеров, луча тарелки и подписей над головой.
 const ART_H = { alien: 1.0, general: 1.0, chick: 1.9, bunny: 2.6, duck: 1.9, piglet: 1.8, warthog: 1.9, sheep: 1.8, goat: 2.4,
   penguin: 2.2, seal: 1.7, reindeer: 3.6, walrus: 1.9, toucan: 2.1, monkey: 2.1, capybara: 1.8, tapir: 2.1,
@@ -84776,8 +84860,10 @@ function metaWin(s){
   metaAlbum(rows);
   G.save.stars[li] = Math.max(prev, st);
   G.save.best[li] = Math.min(G.save.best[li] || 1e9, Math.round(runT(s)));
-  const was = G.save.level; G.save.level = Math.max(G.save.level, Math.min(li + 1, LEVELS.length - 1));
-  if (was < CH2 && G.save.level >= CH2){ G.mapSector = 2; G.sectorNews = true; }   // победа в операции 9 открыла Сектор 2: карта — сразу на нём, с вестью
+  const was = G.save.level, allWas = LEVELS.every((L, i) => (G.save.stars[i] || 0) > 0 || i === li) && prev > 0;
+  G.save.level = Math.max(G.save.level, Math.min(li + 1, LEVELS.length - 1));
+  if (sectorOf(G.save.level) > sectorOf(was)){ G.mapSector = sectorOf(G.save.level); G.sectorNews = G.mapSector; }   // победа открыла сектор: карта — сразу на нём, с вестью
+  if (allWas && li === BASE_N + (G.save.lapN || 0) % (LEVELS.length - BASE_N)) G.save.lapN = (G.save.lapN || 0) + 1;   // круг 18–67: следующая
   G.save.loseRun[li] = 0;                                   // победа сбрасывает счётчик поражений подряд (подсказка стены)
   if (li === 0) G.save.tutor = true;
   if (G.core === 'aim' && G.op) G.save.aimDone = Math.max(aimDoneN(), G.op);   // линейка «Наводки»: пройдена операция № G.op
@@ -85849,7 +85935,7 @@ function buildWorld(L){
   for (const h of L.herds) caps[h.sp] = (caps[h.sp] || 0) + h.n + 6;
   for (const p of (L.pens || [])) caps[p.sp] = (caps[p.sp] || 0) + p.n + 2;
   if (L.boss) caps[L.boss.sp] = (caps[L.boss.sp] || 0) + 2;
-  if (L.golden) for (const sp of L.golden.sp) caps['gold_' + sp] = 2;
+  const GL = S0.gold ? S0.gold.cfg : null; if (GL) for (const sp of GL.sp) caps['gold_' + sp] = 2;   // и «золото обводки» (ringGolden) — по состоянию
   for (const b of (L.burrows || [])) caps['gold_' + b.sp] = (caps['gold_' + b.sp] || 0) + 1;   // «Наводка»: золотой из норы (06.10: без модели был невидим)
   for (const sp in (L.cast || {})) caps[sp] = (caps[sp] || 0) + L.cast[sp];                  // уровень 0: зверей ставит сценарий — модели под них
   for (const g of (L.grass || [])) if (g.sp) caps[g.sp] = (caps[g.sp] || 0) + (g.n || 0) + 2;   // жители зарослей
@@ -85973,7 +86059,7 @@ function beginRun(s){
   G.fingerV = 0; G.moveT = 0; G.camTx = undefined; G.camTz = undefined; G.prevFit = 0; G.lockPeak = 0; G.retHoverT = -9; G.markClackT = -9; G.brkSpin = 0; G.retVx = 0; G.retVz = 0; G.retPx = undefined; G.retPz = undefined;   // ощущение прицела
   G.retPulse = -9; G.retGrowT = -9; G.retShakeT = -9; G.chargePulse = -9; G.aimPat = 0; G.emptyT = -9;   // «Наводка»
   G.acc = 0; G.lastTick = -1; G.hud = {}; G.shake = 0; G.shakeT = -9; G.stepT = -9; G.tutTarget = null; G.unl = []; G.feed = []; G.orderPulse = {}; G.goldFx = null;
-  G.departs = []; G.shortSince = 0; G.previewShort = false; G.shortTipT = -9; G.pendingToast = null; G.textKey.clear(); G.previewDec = null; G.pn = 0; G.hitUntil = 0; G.slowUntil = 0; INP.smp.length = 0; G.cvx = 0; G.cvz = 0; G.moving = false; G.movT = -9; PTRS.clear();
+  G.departs = []; G.shortSince = 0; G.previewShort = false; G.shortTipT = -9; G.pendingToast = null; G.textKey.clear(); G.previewDec = null; G.pn = 0; G.hitUntil = 0; G.slowUntil = 0; G.ttip = null; INP.smp.length = 0; G.cvx = 0; G.cvz = 0; G.moving = false; G.movT = -9; PTRS.clear();
   G.runLog = { species: {}, gold: 0, firsts: [] };                // что похищено за партию — для альбома и наград
   G.rustleT = -9; G.slideT = -9; G.xpPulse = -9;                    // отметки сим-времени прошлой партии: после «Ещё раз» s.t снова с нуля
   if (G.botKind) G.bot = makeBot(G.botKind, 7);
@@ -86361,14 +86447,14 @@ function onEvent(e){
       for (let k = 0; k < 10; k++) W.sparks.emit(e.x, 0.5, e.z, { vx: (VR() - 0.5) * 6, vy: 2 + VR() * 3, vz: (VR() - 0.5) * 6, col: k % 2 ? '#ffffff' : TEAMS[e.q].ui, size: 0.22, life: 0.5, spin: 8 });
       return;
     }
-    G.shake = SH.REDUCED ? 0 : 0.18; G.shakeT = s.t; Sfx.cut(); buzz([20, 30, 20]);
+    G.shake = SH.REDUCED ? 0 : 0.18; G.shakeT = s.t; Sfx.cut(); buzz([20, 30, 20]); hurtFlash(); if (e.by === 'tractor') G.ttip = null;
     addText(e.x, 1.6, e.z, (e.by === 'light' ? 'SPOTTED! ' : '') + '−' + e.lost, { col: '#ff8080', size: 26, dur: 1.2, ico: 'alien' });
     for (let k = 0; k < 14; k++) W.sparks.emit(e.x, 0.5, e.z, { vx: (VR() - 0.5) * 6, vy: 2 + VR() * 3, vz: (VR() - 0.5) * 6, col: k % 2 ? '#ffffff' : '#ff8a5c', size: 0.25, life: 0.5, spin: 8 });
     if (e.by === 'squad') feed(TEAMS[e.byq].name + ' cuts your line −' + e.lost, TEAMS[e.byq].ui);
     if (!G.save.tipCut){ G.save.tipCut = true; save(); toast((s.crew ? 'Your crowd got scattered! ' : 'Your line got cut! ') + 'Pick up the strays with your general — you have ' + Math.round(s.strayT) + ' seconds', 3800); }
   }
   else if (e.type === 'hit'){
-    Sfx.hit(); G.shake = SH.REDUCED ? 0 : 0.14; G.shakeT = s.t; buzz(25);
+    Sfx.hit(); G.shake = SH.REDUCED ? 0 : 0.14; G.shakeT = s.t; buzz(25); if (e.lost) hurtFlash();
     addText(e.x, 1.6, e.z, (e.by === 'light' ? 'Spotted!' : 'Boom!') + (e.lost ? ' −' + e.lost : ''), { col: '#ff8080', size: 22, dur: 1, ico: e.lost ? 'alien' : null });
   }
   else if (e.type === 'zap'){
@@ -87299,14 +87385,14 @@ function tutArrow(x, y){ fctx.beginPath(); fctx.moveTo(x - 11, y - 14); fctx.lin
 // по одному) → bunch (кучка на колее — одним кольцом) → cut (подстроенный проезд трактора по строю) → pickup (подобрать
 // отбившихся) → dodge (трактор снова, увести строй с колеи) → farm (promoteTutorial: стада и Зорька «пухом», таймер, баннер).
 // Стоит 6 с — подсказка оживает (палец сам обводит цель); 20 с без продвижения — цель подходит ближе.
-const TR = { IDLE_T: 6, ASSIST_T: 20, DODGE_DELAY: 2.4 };
-const TR_L = ['Circle', 'Combo', 'Tractor'];
+const TR = { IDLE_T: 6, ASSIST_T: 20, TIP_D: 6.5, OFF: 2.6, TIP_N: 3 };   // TIP_D — трактор ближе к строю на колее, м, — подсказка «с колеи»; OFF — куда показывает стрелка, м от края колеи; TIP_N — сколько раз показать, пока не увернётся
+const TR_L = ['Circle', 'Combo'];   // 28.10 (вечер, Андрей): урок трактора из обучения убран — «долгий и непонятный»; трактор объясняется на Ферме (farmTractorTip)
 function startRingTutorial(fromDemo){
   G.li = 0; G.op = 0; G.sectorNews = false;
   Object.assign(G.save, { tutor: true, tipXp: true, bumpTip: true, tipCut: true, tipHonk: true, tipZap: true }); save();   // старые всплывашки обводки не нужны: учит поле
   beginRun(createState(0, 0, { tut: true, up: upgradesFor() }));
   const s = G.s; G.tut = 0; G.thr = null; $('thr').classList.add('hide'); tutPanel(-1);
-  G.tr = { step: '', t0: s.t, prog: s.t, idle: s.t, pend: [], next: null, k: 1, done: [false, false, false], cutAt: -9, launched: false };
+  G.tr = { step: '', t0: s.t, prog: s.t, idle: s.t, pend: [], next: null, k: 1, done: [false, false], cutAt: -9, launched: false };
   if (!fromDemo) log('event', 'level.start', 'level=0 tutorial'); goto('game');
   render(0.016); warmUp(); render(0.016); G.lastNow = performance.now();
   if (fromDemo){ trGo('one'); trCheer('YOUR TURN!', '#9ff3ff'); } else trDemo();
@@ -87354,9 +87440,44 @@ function trGo(step){
   if (step === 'one'){ T.k = 1; trPop('chick', A.x, A.z - 3.4, 0.4); }
   else if (step === 'two'){ trPop('chick', A.x - 2.9, A.z - 4.6, 0.2); trPop('bunny', A.x + 2.9, A.z - 5.4, 0.55); }
   else if (step === 'bunch'){ T.k = 2; const cx = A.x * 0.5; for (let i = 0; i < 3; i++){ const ang = i / 3 * TAU + 0.5; trPop('chick', cx + Math.cos(ang) * 0.36, lz + Math.sin(ang) * 0.32, 0.15 + i * 0.12); } }   // кучка на колее (три цыплёнка вплотную — кольцо из 11 обводит их с запасом), следом урок трактора
-  else if (step === 'cut'){ T.k = 3; T.cutAt = -9; ringTutTractor(s, 'cut'); T.launched = true; Sfx.honk(); }
-  else if (step === 'pickup'){}
-  else if (step === 'dodge'){ T.launched = false; T.cutAt = -9; if (lane && trLive().length < 2){ const x0 = clamp(A.x, -s.FX + 3, s.FX - 3); trPop('chick', x0 - 1.3, lz, 0.2); trPop('chick', x0 + 1.3, lz, 0.35); } }   // приманка на колее: тянет на неё — учит уходить
+}
+// Ближайший к трактору пришелец впереди него на колее: расстояние от передка, м (нет таких — Infinity).
+function trLaneAhead(s, Tr){
+  const ax = Tr.axis === 'x', w = CFG.TRACTOR_HW + CFG.ALIEN_R + 0.2; let d = Infinity;
+  for (let i = 0; i < s.n; i++){ const a = ax ? s.al[i * 2] : s.al[i * 2 + 1], b = ax ? s.al[i * 2 + 1] : s.al[i * 2];
+    if (Math.abs(b - Tr.line) > w) continue; const f = (a - (ax ? Tr.x : Tr.z)) * Tr.dir - CFG.TRACTOR_HL; if (f > -0.6) d = Math.min(d, Math.max(0, f)); }
+  return d;
+}
+function trOnLane(s, Tr){ const ax = Tr.axis === 'x', w = CFG.TRACTOR_HW + CFG.ALIEN_R + 0.2; for (let i = 0; i < s.n; i++) if (Math.abs((ax ? s.al[i * 2 + 1] : s.al[i * 2]) - Tr.line) < w) return true; return false; }
+// Трактор вне обучения (28.10, вечер, Андрей: урок в обучении «долгий и непонятный» — убран). Подсказка в момент опасности:
+// трактор подъехал к строю на колее ближе TR.TIP_D — время замедляется, колея красным с шевронами, стрелка и рука «с колеи».
+// Увёл строй — «NICE DODGE!», больше не показываем (G.save.tipTracOk); разрезал — покажем на следующем подъезде, до TR.TIP_N раз.
+function tractorTip(s){
+  if (G.tr || s.mode === 'battle' || s.aim || s.pile || s.fly || s.won || s.lost || G.save.tipTracOk || (G.save.tipTrac || 0) >= TR.TIP_N){ G.ttip = null; return; }
+  const tip = G.ttip;
+  if (tip){
+    const Tr = tip.Tr;
+    if (!trOnLane(s, Tr)){ G.ttip = null; G.save.tipTracOk = true; save(); trCheer('NICE DODGE!'); log('event', 'tip.tractor', 'dodged'); return; }
+    if (Tr.parked || trLaneAhead(s, Tr) === Infinity){ G.ttip = null; return; }   // проехал мимо хвоста
+    G.slowUntil = Math.max(G.slowUntil, performance.now() + 150); return;
+  }
+  for (const Tr of s.tractors){
+    if (Tr.parked || s.t < Tr.pauseUntil || !trOnLane(s, Tr) || trLaneAhead(s, Tr) > TR.TIP_D) continue;
+    G.ttip = { Tr, t0: s.t }; G.save.tipTrac = (G.save.tipTrac || 0) + 1; save(); Sfx.honk(); log('event', 'tip.tractor', 'show ' + G.save.tipTrac); return;
+  }
+}
+function tractorTipDraw(s, t){
+  const tip = G.ttip; if (!tip) return; const Tr = tip.Tr, Ld = s.leader, Lp = project(Ld.x, 1.2, Ld.z), ax = Tr.axis === 'x';
+  const word = (txt, x, y, size, col) => drawLabel(txt, x, y, Math.round(size * (1 + 0.05 * Math.sin(t * 7))), col || '#ffffff', 0.98);
+  trLaneDraw(Tr, t);
+  const W2 = fx.clientWidth, q = project(Tr.x, 2.4, Tr.z), qg = project(Tr.x, 0.3, Tr.z);
+  if (q.ok && q.x > 30 && q.x < W2 - 30){ tutArrow(q.x, q.y - 4 - Math.abs(Math.sin(t * 6)) * 8); word('TRACTOR!', clamp(q.x, 100, W2 - 100), q.y - 32, 22, '#ffb0b0'); }
+  else if (qg.ok) trEdgeMark(qg.x, qg.y, t, 'TRACTOR!');
+  if (!Lp.ok) return;
+  const off = (ax ? Ld.z : Ld.x) - Tr.line, room = (ax ? s.FZ : s.FX) - Math.abs(Tr.line), side = Math.abs(off) > 0.3 ? Math.sign(off) : Tr.line > 0 ? -1 : 1;
+  const far = Tr.line + side * (CFG.TRACTOR_HW + Math.min(TR.OFF, room - 1)), q1 = project(ax ? Ld.x : far, 0.3, ax ? far : Ld.z), q0 = project(Ld.x, 0.3, Ld.z);
+  if (q1.ok && q0.ok){ trBigArrow(q0.x, q0.y, q1.x, q1.y, t); if (!INP.down){ const k = (t % 1.3) / 1.3; tutHand(q0.x + (q1.x - q0.x) * k, q0.y + (q1.y - q0.y) * k + 6, k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1, true); } }
+  word('GET OFF THE TRACK!', Lp.x, Lp.y + (ax && side < 0 ? 104 : -70), 24, '#ff8080');   // подпись — с той стороны, куда не смотрит стрелка
 }
 function trCheer(txt, col){ const s = G.s; addText(s.leader.x, 1.9, s.leader.z, txt, { col: col || '#b8ff8a', size: 30, dur: 1.2, rise: 0.6, key: 'trok' }); Sfx.unlock(); buzz([10, 30, 15]); }
 function trTick(){
@@ -87371,8 +87492,6 @@ function trTick(){
   if (T.next && s.t >= T.next.at){ const n = T.next; T.next = null; if (n.step === 'farm') trFinish(false); else trGo(n.step); return; }
   const live = trLive();
   if ((T.step === 'one' || T.step === 'two' || T.step === 'bunch') && !live.length && !T.pend.length && !T.next) trGo(T.step);   // зверь сценария пропал (убежал, съеден) — заново
-  if (T.step === 'dodge' && !T.launched && s.t - T.t0 > TR.DODGE_DELAY && (!s.tractors[0] || s.tractors[0].parked)){ ringTutTractor(s, 'pass'); T.launched = true; T.cutAt = -9; Sfx.honk(); }   // выпускаем, когда прошлый проезд доехал
-  if (T.step === 'pickup' && !trOwnStrays().length && s.t - T.t0 > 0.4 && !T.next){ trCheer('ALL BACK!'); if ((T.cutN || 0) >= 3) T.how = 'third'; T.next = (T.cutN || 0) >= 3 ? { step: 'farm', at: s.t + 1.2 } : { step: 'dodge', at: s.t + 1.0 }; }   // трижды под трактором — урок понят, не держим
   if (s.t - T.prog > TR.ASSIST_T && ['one', 'two', 'bunch'].includes(T.step)){ T.prog = s.t; trAssist(); }
 }
 // Урок стоит дольше 20 с — помогаем делом: цели перебегают ближе к генералу.
@@ -87394,12 +87513,10 @@ function trEvent(e){
     if (T.step === 'one' && !live.length){ trCheer('NICE!'); T.next = { step: 'two', at: s.t + 1.3 }; }
     else if (T.step === 'two' && !live.length){ T.done[0] = true; trCheer('GREAT!'); T.next = { step: 'bunch', at: s.t + 1.3 }; }
     else if (T.step === 'bunch'){
-      if ((e.combo || 0) >= 3){ T.done[1] = true; for (const a of live) a.tut = false; trCheer('COMBO ×' + e.combo + '!', '#ffd34d'); T.next = { step: 'cut', at: s.t + 1.1 }; }
+      if ((e.combo || 0) >= 3){ T.done[1] = true; for (const a of live) a.tut = false; trCheer('COMBO ×' + e.combo + '!', '#ffd34d'); T.how = 'combo'; T.next = { step: 'farm', at: s.t + 1.6 }; }   // 28.10 (вечер): после комбо — сразу Ферма
       else if (live.length < 3){ trCheer('ALL AT ONCE!', '#ffd34d'); for (const a of live) a.tut = false; T.next = { step: 'bunch', at: s.t + 1.2 }; }   // по одному — новая кучка
     }
   }
-  else if (e.type === 'cut' && e.by === 'tractor' && (T.step === 'cut' || T.step === 'dodge')){ T.cutN = (T.cutN || 0) + 1; T.cutAt = s.t; T.prog = s.t; T.step = 'pickup'; T.t0 = s.t; }
-  else if (e.type === 'tractorPark' && (T.step === 'cut' || (T.step === 'dodge' && T.launched)) && T.cutAt < T.t0){ T.how = T.step === 'cut' ? 'cut' : T.launched ? 'pass' : 'stale'; T.done[2] = true; trCheer('WELL DODGED!'); T.step = 'ok'; T.next = { step: 'farm', at: s.t + 1.4 }; }   // dodge — только свой проезд: прошлый (после разреза) доезжает до края позже
 }
 // Конец: то же поле дозаселяется Фермой — стада и Зорька выпрыгивают «пухом», таймер с нуля, баннер операции. Без экранов.
 function trFinish(skip){
@@ -87436,17 +87553,38 @@ function trDraw(s, t){
     if (Lp.ok && T.step === 'one' && s.t - T.idle > 0.8 && !INP.down) word('DRAG', Lp.x, Lp.y + 46, 22, '#ffffff');
   }
   else if (T.step === 'bunch') target(live, 'ALL AT ONCE!', '#ffd34d');
-  else if (T.step === 'cut' || T.step === 'dodge'){
-    const Tr = s.tractors[0];
-    if (Tr && !Tr.parked){ const q = project(Tr.x, 2.4, Tr.z); if (q.ok){ tutArrow(q.x, q.y - 4 - Math.abs(Math.sin(t * 6)) * 8); word('TRACTOR!', q.x, q.y - 32, 22, '#ffb0b0'); } }
-    const onLane = Tr && Array.from({ length: s.n }, (_, i) => Math.abs((Tr.axis === 'x' ? s.al[i * 2 + 1] : s.al[i * 2]) - Tr.line) < CFG.TRACTOR_HW + 0.5).some(Boolean);
-    if (onLane && Tr && !Tr.parked && Lp.ok) word('GET OFF THE TRACK!', Lp.x, Lp.y - 64, 24, '#ff8080');
-    else if (T.step === 'dodge' && live.length) target(live, 'CIRCLE THEM');
-  }
-  else if (T.step === 'pickup'){
-    for (const o of trOwnStrays()){ const q = project(o.x, 1.1, o.z); if (q.ok) tutArrow(q.x, q.y - 6 - Math.abs(Math.sin(t * 6 + o.id)) * 6); }
-    const S = trOwnStrays(); if (S.length){ let cx = 0, cz = 0; for (const o of S){ cx += o.x; cz += o.z; } const q = project(cx / S.length, 1.9, cz / S.length); if (q.ok) word('PICK UP!', q.x, q.y - 28, 22, '#b8ff8a'); }
-  }
+}
+// Колея трактора красным, мигает; шевроны бегут по ходу трактора.
+function trLaneDraw(Tr, t){
+  const ax = Tr.axis === 'x', a0 = Tr.min - CFG.TRACTOR_HL, a1 = Tr.max + CFG.TRACTOR_HL, w = CFG.TRACTOR_HW + 0.15;
+  const P = (a, b) => project(ax ? a : Tr.line + b, 0.03, ax ? Tr.line + b : a), c = [P(a0, -w), P(a1, -w), P(a1, w), P(a0, w)]; if (c.some(q => !q.ok)) return;
+  fctx.save(); fctx.beginPath(); c.forEach((q, i) => i ? fctx.lineTo(q.x, q.y) : fctx.moveTo(q.x, q.y)); fctx.closePath();
+  fctx.fillStyle = 'rgba(255,70,70,' + (0.16 + 0.1 * Math.sin(t * 6)).toFixed(3) + ')'; fctx.fill();
+  fctx.setLineDash([12, 9]); fctx.lineWidth = 3; fctx.strokeStyle = 'rgba(255,90,90,0.85)'; fctx.stroke(); fctx.setLineDash([]);
+  const p0 = ax ? Tr.x : Tr.z, step = 2.2, ph = (t * 2.2) % step;
+  for (let k = 1; k <= 5; k++){ const a = p0 + Tr.dir * (CFG.TRACTOR_HL + 0.6 + (k - 1) * step + ph); if (a < a0 || a > a1) continue;
+    const m = P(a, 0), l = P(a - Tr.dir * 0.5, -0.45), r = P(a - Tr.dir * 0.5, 0.45); if (!m.ok || !l.ok || !r.ok) continue;
+    fctx.beginPath(); fctx.moveTo(l.x, l.y); fctx.lineTo(m.x, m.y); fctx.lineTo(r.x, r.y); fctx.lineWidth = 5; fctx.lineCap = 'round'; fctx.lineJoin = 'round';
+    fctx.strokeStyle = 'rgba(255,255,255,' + (0.85 - k * 0.13).toFixed(2) + ')'; fctx.stroke(); }
+  fctx.restore();
+}
+// Метка трактора за кадром: красный кружок с «!» у края экрана на высоте колеи, треугольник — к трактору, подпись — внутрь экрана.
+function trEdgeMark(x, y, t, txt){
+  const W2 = fx.clientWidth, H2 = fx.clientHeight, px = clamp(x, 28, W2 - 28), py = clamp(y, hudBottom() + 40, H2 - 40), d = Math.hypot(x - px, y - py) || 1, ux = (x - px) / d, uy = (y - py) / d, r = 19 + 2 * Math.sin(t * 9);
+  fctx.save();
+  fctx.beginPath(); fctx.moveTo(px + ux * (r + 13), py + uy * (r + 13)); fctx.lineTo(px + ux * (r - 2) - uy * 11, py + uy * (r - 2) + ux * 11); fctx.lineTo(px + ux * (r - 2) + uy * 11, py + uy * (r - 2) - ux * 11); fctx.closePath();
+  fctx.fillStyle = '#ff5d5d'; fctx.fill(); fctx.lineWidth = 3; fctx.strokeStyle = '#2b2140'; fctx.stroke();
+  fctx.beginPath(); fctx.arc(px, py, r, 0, TAU); fctx.fillStyle = '#ff5d5d'; fctx.fill(); fctx.lineWidth = 3; fctx.strokeStyle = '#2b2140'; fctx.stroke(); fctx.restore();
+  drawLabel('!', px, py + 1, 24, '#ffffff', 1);
+  drawLabel(txt, clamp(px - ux * (r + 52), 60, W2 - 60), py - uy * (r + 22), 18, '#ffb0b0', 0.98);   // рядом с меткой, на колее: над строем места нет — там стрелка
+}
+// Толстая стрелка на экране (от x0,y0 к x1,y1), острие пульсирует.
+function trBigArrow(x0, y0, x1, y1, t){
+  const d = Math.hypot(x1 - x0, y1 - y0); if (d < 8) return; const ux = (x1 - x0) / d, uy = (y1 - y0) / d, e = 4 * Math.sin(t * 8), hx = x1 + ux * e, hy = y1 + uy * e;
+  fctx.save(); fctx.lineCap = 'round';
+  fctx.beginPath(); fctx.moveTo(x0 + ux * 14, y0 + uy * 14); fctx.lineTo(hx - ux * 16, hy - uy * 16); fctx.lineWidth = 12; fctx.strokeStyle = '#2b2140'; fctx.stroke(); fctx.lineWidth = 7; fctx.strokeStyle = '#ffd34d'; fctx.stroke();
+  fctx.beginPath(); fctx.moveTo(hx, hy); fctx.lineTo(hx - ux * 22 - uy * 15, hy - uy * 22 + ux * 15); fctx.lineTo(hx - ux * 22 + uy * 15, hy - uy * 22 - ux * 15); fctx.closePath();
+  fctx.fillStyle = '#ffd34d'; fctx.fill(); fctx.lineWidth = 3; fctx.strokeStyle = '#2b2140'; fctx.stroke(); fctx.restore();
 }
 // Рамка ролика: плашка «HOW TO PLAY» с мигающей точкой, внизу полоса с подписью и ходом ролика, джойстик с пальцем — куда ведёт.
 function trDemoDraw(s, t, live, target){
@@ -88570,7 +88708,7 @@ function render2D(){
   }
   if (s.crew) crowdLabels(s); if (s.fly) beamLabels(s); if (s.aim) aimHud(s, t);                        // «Куча-мала»: над зверями у генерала — сколько из скольких
   if (s.alive && s.n && !s.aim) drawXpRing(s, t);
-  if (G.tr) trDraw(s, t);
+  if (G.tr) trDraw(s, t); else if (G.ttip) tractorTipDraw(s, t);
   if (s.strays.length){                         // отбившиеся: сколько и сколько секунд осталось — над их серединой
     let cx = 0, cz = 0, soon = 1e9; for (const o of s.strays){ cx += o.x; cz += o.z; soon = Math.min(soon, o.until - t); }
     const p = project(cx / s.strays.length, 1.7, cz / s.strays.length);
@@ -88677,10 +88815,14 @@ function hud(){
   const left = Math.max(0, Math.ceil((battle ? L.time : timeLimit(s)) - s.t)), top = s.lvl === s.sizes.length - 1, k = top ? 1 : cl01(s.xp / xpNeed(s));
   const st = battle ? standings(s) : null, rank = battle ? st.findIndex(o => o.id === 0) + 1 : 0;
   setHud('n', s.n + '|' + s.lvl + '|' + Math.round(k * 24) + '|' + s.alive + '|' + rank, () => {
+    const pv = G.hudSq, cur = { n: s.n, lvl: s.lvl, s }; G.hudSq = cur;          // баунс счётчика: с чем сравнивать — прошлое значение той же партии
+    if (pv && pv.s === s && !SH.REDUCED){ const el = $('hud-squad'), cls = s.lvl > pv.lvl ? 'sqlvl' : s.n < pv.n ? 'sqhurt' : s.n > pv.n ? 'sqgain' : '';
+      if (cls){ el.classList.remove('sqhurt', 'sqgain', 'sqlvl'); void el.offsetWidth; el.classList.add(cls); } }
     $('hud-n').textContent = s.alive ? (s.fly ? s.lvl + 1 : ringCap(s)) : '—'; $('hud-lvl').textContent = battle ? ordEn(rank) + ' place' : top ? 'max' : s.aim ? 'saucer' : 'lv. ' + (s.lvl + 1);
     const avk = s.fly ? 'saucer' : 'alien', av = $('hud-ava'); if (av && av.dataset.pk !== avk){ av.dataset.pk = avk; av.src = PORTRAITS.get(avk) || BLANK; }   // «Наводка», «Тарелка»: в счётчике — тарелка   // «Куча-мала»: число — без генерала (столько окружают)
     $('hud-ring').innerHTML = xpRingSvg(k, top); $('hud-squad').classList.toggle('full', top && !battle);
   });
+  setHud('skip', skipAllowed(), v => { $('btn-skip').hidden = !v; });
   setHud('tvis', s.goal.type === 'tut', v => { $('hud-time').style.visibility = v ? 'hidden' : ''; });   // уровень 0: часов нет
   setHud('time', G.god && !battle ? '∞' : left, v => { const el = $('hud-time'); el.innerHTML = (battle ? '' : ic('clock', 20, 2.6)) + (v === '∞' ? '∞' : fmtT(v)); el.classList.toggle('hurry', v !== '∞' && v <= SH.HURRY_T); el.classList.toggle('battle', battle); });
   if (!(G.god && !battle) && left <= SH.HURRY_T && left > 0 && left !== G.lastTick && !s.won && !s.over){ G.lastTick = left; Sfx.tick(); }
@@ -88711,7 +88853,7 @@ function hud(){
   } else if (g.type === 'tut'){                                           // «Наводка», уровень 0: три урока
     const T = G.ta || G.tr, LS = G.tr ? TR_L : TUT_L, k = T ? T.k : 3, dn = T ? T.done : [true, true, true];   // обводка: свои три урока
     setHud('goal', 'tut|' + (G.tr ? 'r' : 'a') + k + '|' + dn.join(','), () => { gEl.style.display = ''; gEl.classList.remove('ready');
-      gEl.innerHTML = '<div class="gh"><span class="lbl">Tutorial</span><small>lesson ' + Math.min(3, k) + ' of 3</small></div><div class="tsteps">' + LS.map((n, i) => '<span class="' + (dn[i] ? 'done' : i + 1 === k ? 'cur' : '') + '">' + (dn[i] ? '✓ ' : '') + n + '</span>').join('') + '</div>'; });
+      gEl.innerHTML = '<div class="gh"><span class="lbl">Tutorial</span><small>lesson ' + Math.min(LS.length, k) + ' of ' + LS.length + '</small></div><div class="tsteps">' + LS.map((n, i) => '<span class="' + (dn[i] ? 'done' : i + 1 === k ? 'cur' : '') + '">' + (dn[i] ? '✓ ' : '') + n + '</span>').join('') + '</div>'; });
   } else if (g.type === 'orders'){                                        // «Наводка»: заказы по очереди
     const o = curOrder(s), i = s.ordI, fits = o ? CFG.AIM.R0 * Math.pow(CFG.AIM.GROW, s.lvl) >= SPECIES[o.sp].r + CFG.AIM.PAD - 1e-9 : true, need = o ? aimLvlFor(SPECIES[o.sp].r) + 1 : 0;
     setHud('goal', 'orders|' + i + '|' + s.ordGot + '|' + fits, () => {
@@ -88758,7 +88900,9 @@ function hud(){
 // --- экраны: DOM-оверлеи, любой открывается кодом или хешем (§6, §11) ---
 let bannerUntil = 0, toastUntil = 0;
 function banner(html, sub){ const b = $('banner'); b.innerHTML = html + (sub ? '<small>' + sub + '</small>' : ''); b.classList.remove('hide'); bannerUntil = performance.now() + 2200; fxStart('banner', 2.2, html); }
-function toast(msg, ms){ const t = $('toast'); t.textContent = msg; t.classList.remove('hide'); toastUntil = performance.now() + (ms || 1800); fxStart('toast', (ms || 1800) / 1000, msg); }
+function hurtFlash(){ if (SH.REDUCED) return; const el = $('hurt'); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); }
+function toast(msg, ms){ if (G.screen === 'game'){ log('event', 'toast.skip', msg.slice(0, 40)); return; }   // 28.10 (вечер, Андрей): «надписи снизу под пальцем не видны вообще — проще убрать»: в партии строки внизу нет
+  const t = $('toast'); t.textContent = msg; t.classList.remove('hide'); toastUntil = performance.now() + (ms || 1800); fxStart('toast', (ms || 1800) / 1000, msg); }
 // ===========================================================================
 // Интерфейс по холсту Claude Design «UFO Squad UI» (03.10): иконки, кристалл, звёзды, портреты моделей, схемы правил, экраны.
 // ===========================================================================
@@ -89127,6 +89271,19 @@ const OPS = {
   waterhole: { x: 0.55,  y: 0.145, who: 'fennec',      rule: 'oasis',     ruleName: 'Oasis',            ruleTxt: 'Every twenty seconds all the animals gather at the water and crowd the shore — seize the moment for one huge ring.', story: 'Palms, water and a crowd of animals at the watering hole — every twenty seconds the shore is packed.' },
   barkhan:   { x: 0.82,  y: 0.08,  who: 'camel',       threats: ['jeep', 'keeper_desert'],              story: 'Dune the Camel is a mountain of sand and fur among the dunes. The jeep patrols the dune, the warden is on alert.' },
 };
+// Операции 18–67 (28.10): карточка — от базы (правило, угрозы), узел — на месте узла сектора 2 с тем же номером в секторе,
+// на узле — главная цель (босс, первый вид заказа, золотой зверь); легенда — по цели.
+function genStory(L){
+  const g = L.goal;
+  return g.type === 'boss' ? L.boss.name + ' roams here. Grow your squad to ' + L.boss.need + ' and circle it.'
+    : g.type === 'order' ? 'The mothership sent an order — collect every animal on the list.'
+    : g.type === 'combo' ? 'Circle ' + g.n + ' animals in one ring.' : 'Golden animals keep popping up — catch ' + g.n + ' before they run off.';
+}
+for (let i = BASE_N; i < LEVELS.length; i++){
+  const L = LEVELS[i], T = OPS[L.tpl], slot = OPS[LEVELS[CH2 + (i - BASE_N) % SECTOR_N].id], g = L.goal;
+  OPS[L.id] = Object.assign({}, T, { x: slot.x, y: slot.y, story: genStory(L),
+    who: L.boss ? L.boss.sp : g.type === 'gold' ? 'gold_' + L.golden.sp[0] : g.type === 'order' ? Object.keys(g.items)[0] : T.who });
+}
 const GOAL_TXT = { boss: L => L.boss.name, order: () => 'Saucer order', gold: L => 'Golden animals ×' + L.goal.n, combo: L => L.goal.n + ' animals in one ring' };
 function opArt(L, size){ const o = OPS[L.id]; return o.who ? pic(o.who, 'width:' + size + 'px;height:' + size + 'px') : tornadoSvg(Math.round(size * 0.7)); }
 function starfield(n, seed){ const r = mulberry32(seed); let h = '<div class="stars-bg">'; for (let i = 0; i < n; i++){ const s = r() < 0.15 ? 3 : r() < 0.5 ? 2 : 1.5; h += '<i style="left:' + (r() * 100).toFixed(1) + '%;top:' + (r() * 100).toFixed(1) + '%;width:' + s + 'px;height:' + s + 'px;opacity:' + (0.35 + r() * 0.6).toFixed(2) + '"></i>'; } return h + '</div>'; }
@@ -89138,11 +89295,11 @@ function navBar(on, aimOnly){
   const albumN = META.ALBUM.filter(k => G.save.album[k]).length;
   const tab = (key, icn, txt, badge) => '<button data-act="' + key + '"' + (on === key ? ' class="on"' : '') + '>' + ic(icn, 25, 2.5) + '<span>' + txt + '</span>' + (badge && on !== key ? '<i class="badge">' + badge + '</i>' : '') + '</button>';
   if (aimOnly || G.core === 'aim') return '<nav class="nav">' + tab('map', 'map', 'Operations') + tab('album', 'book', 'Album', albumN ? albumN : '') + tab('help', 'help', 'How to play') + '</nav>';   // «Наводка»: без Лаборатории и Битвы (они про отряд)
-  const bt = battleOn() ? tab('battle', 'swords', 'Battle') : '<button data-act="lockedbattle" class="lockt">' + ic('lock', 25, 2.5) + '<span>Battle</span><i class="badge lv">' + LEVELS[LEVELS.length - 1].n + '</i></button>';   // замок и номер последней операции
+  const bt = battleOn() ? tab('battle', 'swords', 'Battle') : '<button data-act="lockedbattle" class="lockt">' + ic('lock', 25, 2.5) + '<span>Battle</span><i class="badge lv">' + LEVELS[BASE_N - 1].n + '</i></button>';   // замок и номер последней операции
   return '<nav class="nav">' + tab('map', 'map', 'Map') + tab('lab', 'flask', 'Lab', affordable ? '!' : '') + tab('album', 'book', 'Album', albumN ? albumN : '') + bt + '</nav>';
 }
 // Битва открывается после прохождения всех операций (27.10, Андрей): до того на вкладке — замок и номер последней операции.
-function battleOn(){ return G.devBattle || (G.save.stars[LEVELS.length - 1] || 0) > 0;
+function battleOn(){ return G.devBattle || (G.save.stars[BASE_N - 1] || 0) > 0;   // после 17-й (операции 18+ — продолжение, не условие)
 }
 function smoothPath(pts){
   let d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
@@ -89153,7 +89310,9 @@ function smoothPath(pts){
 // --- экраны ---
 function curOp(){
   if (G.core !== 'ring'){ let c = 0; for (let i = 0; i <= G.save.level && i < LEVELS.length; i++) if (coreOk(LEVELS[i])){ c = i; if (!G.save.stars[i]) return i; } return c; }   // «Куча-мала»: только тестовые операции
-  for (let i = 0; i <= G.save.level && i < LEVELS.length; i++) if (!G.save.stars[i]) return i; return Math.min(G.save.level, LEVELS.length - 1); }
+  for (let i = 0; i <= G.save.level && i < LEVELS.length; i++) if (!G.save.stars[i] && !(G.save.skipped || {})[i]) return i;   // пропущенная за ролик — пройдена
+  if (G.save.level >= LEVELS.length - 1) return BASE_N + (G.save.lapN || 0) % (LEVELS.length - BASE_N);   // всё пройдено — по кругу 18–67 (28.10)
+  return Math.min(G.save.level, LEVELS.length - 1); }
 // Номер операции на экранах: в «Наводке» — место в её кампании (AIM_ORDER), в обводке — номер уровня.
 // Кампания «Наводки» — линейка номеров (замечания бота 23.10). Номер на экране = номер в журнале (levelNo). Плохую операцию
 // можно убрать без сборки (RC.skip_levels — номера 1–9 базовой кампании, как в меню). После последней линейка не кончается:
@@ -89211,10 +89370,11 @@ function scrMap(){
   const cur = curOp(), VBW = 390, VBH = 480;
   // Сектор 2 (глава 2, 03.10): открыт, как только G.save.level дорос до CH2 (победа в операции 9); пока LEVELS короче
   // CH2+1, s2on всегда false — свой код не трогаем, когда появятся LEVELS 10–18, сектор включится сам.
-  const s2on = G.save.level >= CH2;
-  const wantSector = G.mapSector || (chapterOf(cur) === 2 ? 2 : 1);
-  const sector = wantSector === 2 && s2on ? 2 : 1;
-  const idxs = []; for (let i = 0; i < LEVELS.length; i++) if (chapterOf(i) === sector) idxs.push(i);
+  // 28.10: сектора 3–8 — операции 18–67 (sectorOf). Открыт — когда G.save.level дорос до его первой операции.
+  const NS = sectorOf(LEVELS.length - 1), secFirst = k => LEVELS.findIndex((L, i) => sectorOf(i) === k), secOn = k => k === 1 || G.save.level >= secFirst(k);
+  const s2on = secOn(2), wantSector = G.mapSector || sectorOf(cur);
+  const sector = wantSector >= 1 && wantSector <= NS && secOn(wantSector) ? wantSector : sectorOf(cur);
+  const idxs = []; for (let i = 0; i < LEVELS.length; i++) if (sectorOf(i) === sector) idxs.push(i);
   const pts = idxs.map(i => [OPS[LEVELS[i].id].x * VBW, OPS[LEVELS[i].id].y * VBH]);
   const fi = idxs[0], la = idxs[idxs.length - 1];
   const doneUpto = !idxs.length ? -1 : cur > la ? idxs.length - 1 : cur < fi ? -1 : idxs.indexOf(cur);
@@ -89228,13 +89388,16 @@ function scrMap(){
       (!locked && !isCur ? '<span class="st">' + starsRow(st, 14, 1) + '</span>' : '') + '<span class="nm">' + L.name + '</span></button>';
   }).join('');
   const showUfo = idxs.includes(cur), co = showUfo ? OPS[LEVELS[cur].id] : null;
-  const sb = (k, t) => { const on = sector === k, lk = k === 2 && !s2on;
-    return '<button data-act="' + (lk ? 'lockedsector' : 'sector:' + k) + '"' + (on ? ' class="on"' : '') + (lk ? ' style="opacity:.55"' : '') + '>' + t + (lk ? ic('lock', 13, 3) : '') + '</button>'; };
-  const sectorTabs = '<div class="tabs" style="margin-top:10px;position:relative;z-index:3">' + sb(1, 'Sector 1') + sb(2, 'Sector 2') + '</div>';
+  const sb = (k, t) => { const on = sector === k, lk = !secOn(k);
+    return '<button data-act="' + (lk ? 'lockedsector' + k : 'sector:' + k) + '"' + (on ? ' class="on"' : '') + (lk ? ' style="opacity:.55"' : '') + '>' + t + (lk ? ic('lock', 13, 3) : '') + '</button>'; };
+  // Вкладки: два сектора — как было; дальше — листалка «‹ Sector N ›» (8 вкладок в ширину телефона не влезают)
+  const pg = (k, t) => k < 1 || k > NS ? '<button style="visibility:hidden">' + t + '</button>' : sb(k, t);
+  const sectorTabs = '<div class="tabs" style="margin-top:10px;position:relative;z-index:3">' + (sector <= 2 && !secOn(3) ? sb(1, 'Sector 1') + sb(2, 'Sector 2')
+    : pg(sector - 1, '‹ ' + (sector - 1)) + '<button class="on" data-act="sector:' + sector + '">Sector ' + sector + '</button>' + pg(sector + 1, (sector + 1) + ' ›')) + '</div>';
   // Весть «Сектор 2 открыт» — первый взгляд на карту после победы в операции 9 (metaWin): плашка над картой, сама исчезает.
   // Не тост, а плашка в самой карте: показывается один раз и уходит вместе с экраном (тост общий на все экраны и лежит над нижней навигацией).
-  const news = G.sectorNews && sector === 2 ? '<div id="secnews" style="position:absolute;left:0;right:0;top:-16px;z-index:4;display:flex;justify-content:center;pointer-events:none">' +
-    '<div class="mchip" style="height:38px;padding:0 14px 0 10px;background:#dcffc0;font-size:16px;box-shadow:0 4px 0 var(--ink);animation:pop .3s ease-out">' + ic('bolt', 18, 2.6) + 'Sector 2 unlocked!</div></div>' : '';
+  const news = G.sectorNews && sector === G.sectorNews ? '<div id="secnews" style="position:absolute;left:0;right:0;top:-16px;z-index:4;display:flex;justify-content:center;pointer-events:none">' +
+    '<div class="mchip" style="height:38px;padding:0 14px 0 10px;background:#dcffc0;font-size:16px;box-shadow:0 4px 0 var(--ink);animation:pop .3s ease-out">' + ic('bolt', 18, 2.6) + 'Sector ' + sector + ' unlocked!</div></div>' : '';
   return '<div class="scr space map">' + starfield(70, 11) + glowAt('85%', '38%', 170, '#ff5fa2', 0.22) + glowAt('10%', '58%', 160, '#3fb6c9', 0.25) + glowAt('56%', '17%', 150, '#9a62f0', 0.3) +
     '<div class="planet" style="top:calc(100% - 196px)"></div>' +
     '<div class="topbar"><div class="tl">' + gemPill(G.save.gems || 0) + starPill(totalStars() + '/' + LEVELS.length * 3) + '</div><button class="ibtn dark" data-act="help" aria-label="How to play">' + ic('help', 22, 2.4) + '</button></div>' +
@@ -89366,7 +89529,7 @@ function rewardRows(R){
     '<div class="r tot"><span style="font-weight:900">Total</span><b style="font-size:22px">' + gemSvg(22) + '+' + R.total + '</b></div></div>';
 }
 function scrWin(){
-  const s = G.s, L = s.L, R = G.reward || { rows: [], total: 0, stars: stars(s) }, st = R.stars || 1, last = !s.aim && G.li >= LEVELS.length - 1;
+  const s = G.s, L = s.L, R = G.reward || { rows: [], total: 0, stars: stars(s) }, st = R.stars || 1, last = false;   // 28.10: после 67-й — круг 18–67, «Next» всегда есть
   const victim = L.goal.type === 'orders' ? pic(L.goal.list[L.goal.list.length - 1].sp, 'width:140px;height:140px') : L.goal.type === 'boss' ? pic(L.boss.sp, 'width:150px;height:150px') : L.goal.type === 'order' ? pic(Object.keys(L.goal.items)[0], 'width:130px;height:130px') : L.goal.type === 'gold' ? pic('gold_' + L.golden.sp[0], 'width:140px;height:140px') : OPS[L.id] && OPS[L.id].who ? pic(OPS[L.id].who, 'width:140px;height:140px') : tornadoSvg(120);
   const head = L.goal.type === 'orders' ? 'All orders filled!' : L.goal.type === 'boss' ? L.boss.name.split(' ')[0] + ' on board!' : L.goal.type === 'order' ? 'Order filled!' : L.goal.type === 'gold' ? 'Gold on board!' : 'Ring ×' + s.bestCombo + '!';
   const [S3, S2] = starK(s.aim), LT = L.time * (s.timeK || 1), t3 = Math.round(LT * (1 - S3)), t2 = Math.round(LT * (1 - S2));
@@ -89501,7 +89664,7 @@ $('scr').addEventListener('click', (e) => {
   else if (act === 'fight') startBattle();
   else if (act === 'retry'){ metaQuit(); if (G.s && G.s.mode === 'battle') startBattle(); else if (G.s && G.s.goal.type === 'tut') (G.core === 'aim' ? startTutorial() : startRingTutorial()); else startLevel(G.li); }   // из паузы — брошенная партия (metaQuit)
   else if (act === 'next' && G.core === 'aim') startOp((G.op || 1) + 1);   // «Наводка»: по линейке, после 9-й — по кругу (aimSeq)
-  else if (act === 'next'){ const nx = Math.min(LEVELS.length - 1, G.li + 1); if (!coreOk(LEVELS[nx])){ goto('map'); toast(G.core === 'aim' ? 'All operations complete!' : 'Test operations complete. The rest use the lasso', 2800); } else if (G.core === 'aim') startLevel(nx); else goto('mission', nx); }
+  else if (act === 'next'){ const nx = G.li + 1 < LEVELS.length && !(G.save.level >= LEVELS.length - 1 && LEVELS.every((L, i) => G.save.stars[i])) ? G.li + 1 : curOp(); if (!coreOk(LEVELS[nx])){ goto('map'); toast(G.core === 'aim' ? 'All operations complete!' : 'Test operations complete. The rest use the lasso', 2800); } else if (G.core === 'aim') startLevel(nx); else goto('mission', nx); }
   else if (act === 'resume') goto('game');
   else if (act === 'tutagain'){ G.save.thr = {}; save(); metaQuit(); startTutorial(); }   // «Наводка»: уровень 0 «Обучение» ещё раз (и карточки угроз)
   else if (act === 'tutskip') tutFinish();
@@ -89513,8 +89676,8 @@ $('scr').addEventListener('click', (e) => {
   else if (act.startsWith('tab:')){ G.albumTab = act.slice(4); goto('album'); }
   else if (act.startsWith('albumsec:')){ G.albumSub = +act.slice(9); goto('album'); }
   else if (act.startsWith('sector:')){ G.mapSector = +act.slice(7); goto('map'); }
-  else if (act === 'lockedbattle'){ toast('Complete operation ' + LEVELS[LEVELS.length - 1].n + ' to unlock Battle', 1800); buzz(10); }
-  else if (act === 'lockedsector'){ toast('Complete operation ' + CH2 + ' to unlock Sector 2', 1800); }
+  else if (act === 'lockedbattle'){ toast('Complete operation ' + LEVELS[BASE_N - 1].n + ' to unlock Battle', 1800); buzz(10); }
+  else if (act.startsWith('lockedsector')){ const k = +act.slice(12) || 2, f = LEVELS.findIndex((L, i) => sectorOf(i) === k); toast('Complete operation ' + f + ' to unlock Sector ' + k, 1800); }
   else if (act === 'music'){ G.save.music = G.save.music === false; save(); goto(G.screen); }
   else if (act === 'sound'){ G.save.muted = !G.save.muted; save(); updateMuteBtn(); goto(G.screen); }
   else if (['map', 'lab', 'album', 'battle', 'help'].includes(act)){ if (act === 'map') metaQuit(); goto(act); }
@@ -89565,6 +89728,16 @@ function contResume(sec, sub){
 function updateMuteBtn(){ $('btn-mute').innerHTML = ic(G.save.muted ? 'mute' : 'sound', 22, 2.6); }
 $('btn-mute').onclick = () => { Sfx.init(); G.save.muted = !G.save.muted; save(); updateMuteBtn(); log('input', 'button', 'mute=' + G.save.muted); musicFor(G.screen); };
 $('btn-pause').onclick = () => { Sfx.init(); goto(G.screen === 'pause' ? 'game' : 'pause'); };
+// Skip (28.10): за ролик операция засчитывается пройденной без звёзд (G.save.skipped) и сразу открывается следующая.
+// Не в обучении, не в битве, с операции RC.skip_from_level (как skip_from_level в Twist Away), пока партия идёт.
+function skipAllowed(){ const s = G.s; return !!s && G.core === 'ring' && G.screen === 'game' && s.mode !== 'battle' && !G.tr && s.goal.type !== 'tut' && RC.skip_from_level > 0 && levelNo() >= RC.skip_from_level && !s.won && !s.lost && !s.over && !G.ending; }
+$('btn-skip').onclick = () => { if (!skipAllowed()) return; Sfx.init(); goto('pause'); adPlace = 'skip level'; showRewarded(skipLevel); };
+function skipLevel(){
+  const li = G.li; if (!G.s || G.s.won) return;
+  (G.save.skipped || (G.save.skipped = {}))[li] = 1; G.save.level = Math.max(G.save.level, Math.min(li + 1, LEVELS.length - 1)); G.save.loseRun[li] = 0; save();
+  log('event', 'level.skip', 'level=' + levelNo()); G.s.quit = true;
+  const nx = curOp(); if (nx === li){ goto('map'); return; } goto('mission', nx);
+}
 updateMuteBtn(); $('btn-pause').innerHTML = ic('pause', 22, 2.6);
 
 
@@ -89626,7 +89799,7 @@ function simStep(){
   for (const e of s.events) onEvent(e);
   s.events.length = 0; flushUnlocks(); fxTick();
   if (G.ta) tutTick();
-  if (G.tr) trTick();
+  if (G.tr) trTick(); else if (G.s && G.screen === 'game') tractorTip(G.s);
   if (G.pendingToast && s.t >= G.pendingToast.at){ const pt = G.pendingToast; G.pendingToast = null; toast(pt.msg, pt.ms); }
   if (Math.hypot(s.leader.vx, s.leader.vz) > 0.5 && s.t - G.stepT > 0.22){ G.stepT = s.t; Sfx.patter(); }
   if (G.ending && s.t >= G.ending) finishEnding();
@@ -89681,7 +89854,7 @@ setInterval(() => { if (!document.hidden && performance.now() - lastFrame > 250)
 // Удалённый конфиг Launcher (замечание бота Proto-vibe 23.10): в приложении значения читает pfSdk.config.get(ключ, текущее),
 // вне приложения (pfSdk нет) остаются текущие. Списки и объекты приходят строкой JSON. Ключи в Launcher заводит бот.
 // Номера операций — базовой кампании «Наводки» (1–9, как в меню). Список ключей — README, раздел «Сборка для стора».
-const RC = { skip_levels: [], loop_from_level: 5, reward_ad_mult: 2, continue_seconds: 30, continues_per_level: 1 };
+const RC = { skip_levels: [], loop_from_level: 5, reward_ad_mult: 2, continue_seconds: 30, continues_per_level: 1, skip_from_level: 3 };
 function readSdkConfig(){
   const sdk = window.pfSdk; if (!sdk || !sdk.config || typeof sdk.config.get !== 'function') return;
   const val = v => { if (typeof v === 'string'){ try { return JSON.parse(v); } catch (e) { return v; } } return v; };
@@ -89693,6 +89866,7 @@ function readSdkConfig(){
     RC.reward_ad_mult = num(get("reward_ad_mult", 2), RC.reward_ad_mult, 1, 10);
     RC.continue_seconds = Math.round(num(get("continue_seconds", 30), RC.continue_seconds, 5, 300));
     RC.continues_per_level = Math.round(num(get("continues_per_level", 1), RC.continues_per_level, 0, 10));
+    RC.skip_from_level = Math.round(num(get("skip_from_level", 3), RC.skip_from_level, 0, 999));   // кнопка Skip — с этой операции; 0 — без кнопки
     ECON.WIN0 = num(get("win_gems", 20), ECON.WIN0);                       // первая победа в операции 1
     ECON.WIN_STEP = num(get("win_gems_step", 4), ECON.WIN_STEP);           // + за каждую следующую
     ECON.REPLAY_K = num(get("replay_gems_k", 0.5), ECON.REPLAY_K, 0, 1);   // повторная победа — доля первой
